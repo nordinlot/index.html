@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="ms">
+<html lang="ms" class="light">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>SCK WaterLog — Rekod Bacaan Meter Air (Cloud)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <title>SCK WaterLog — Rekod Bacaan Meter Air (Cloud & Google Auth)</title>
 
-  <!-- Konfigurasi iPhone Web App (Add to Home Screen) -->
+  <!-- Konfigurasi iPhone & iPad Web App (Add to Home Screen) -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="SCK WaterLog" />
   <meta name="theme-color" content="#0F4C81" />
 
-  <!-- Ikon Fallback SVG sebelum Canvas menjana ikon PNG resolusi tinggi untuk iPhone -->
+  <!-- Ikon Fallback SVG -->
   <link id="apple-touch-icon" rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%230F4C81'/%3E%3Cstop offset='100%25' stop-color='%230284C7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' rx='40' fill='url(%23g)'/%3E%3Cpath d='M90 32 C90 32 132 78 132 108 A42 42 0 1 1 48 108 C48 78 90 32 90 32 Z' fill='%23ffffff'/%3E%3Ccircle cx='90' cy='112' r='22' fill='%230284C7'/%3E%3Cpath d='M90 112 L102 100' stroke='%23ffffff' stroke-width='4.5' stroke-linecap='round'/%3E%3Ccircle cx='90' cy='112' r='4' fill='%23ffffff'/%3E%3C/svg%3E" />
   <link id="favicon-icon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230F4C81'/%3E%3Cpath d='M32 10 C32 10 48 28 48 40 A16 16 0 1 1 16 40 C16 28 32 10 32 10 Z' fill='%2338BDF8'/%3E%3C/svg%3E" />
 
@@ -23,6 +23,7 @@
 
   <script>
     tailwind.config = {
+      darkMode: 'class',
       theme: {
         extend: {
           fontFamily: {
@@ -44,17 +45,16 @@
   <style>
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background-color: #F8FAFC;
-      color: #0F172A;
       -webkit-tap-highlight-color: transparent;
     }
 
+    /* Gaya Lembaran A4 untuk Pratonton & Cetakan */
     .a4-sheet {
-      background: #ffffff;
-      box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.12);
-      border: 1px solid #E2E8F0;
+      background: #ffffff !important;
+      box-shadow: 0 12px 32px -5px rgba(15, 23, 42, 0.14);
+      border: 1px solid #CBD5E1;
       margin: 0 auto 24px auto;
-      color: #000000;
+      color: #000000 !important;
     }
 
     .a4-landscape {
@@ -75,7 +75,8 @@
       width: 100%;
       border-collapse: collapse;
       font-size: 9px;
-      line-height: 1.2;
+      line-height: 1.25;
+      color: #0F172A;
     }
 
     .excel-table th,
@@ -96,8 +97,9 @@
         margin: 6mm;
       }
 
-      body {
+      html, body {
         background: #ffffff !important;
+        color: #000000 !important;
         margin: 0 !important;
         padding: 0 !important;
       }
@@ -139,13 +141,97 @@
     }
   </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200">
 
   <!-- ===================================================================== -->
-  <!-- HEADER APLIKASI & STATUS CLOUD FIREBASE                               -->
+  <!-- MODAL LOG MASUK GOOGLE (POPUP) & PILIHAN MOD TETAMU                   -->
+  <!-- ===================================================================== -->
+  <div id="auth-modal" class="no-print fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4 transition-opacity">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-slate-200 dark:border-slate-800 relative overflow-hidden">
+      <!-- Hiasan Latar Atas -->
+      <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-sck-dark via-sck-primary to-sky-400"></div>
+
+      <!-- Butang Tutup (Jika sudah ada sesi atau ingin masuk sebagai tetamu) -->
+      <button onclick="continueAsGuest()" title="Teruskan Tanpa Log Masuk" class="absolute top-4 right-4 p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" />
+        </svg>
+      </button>
+
+      <div class="flex flex-col items-center text-center mt-2">
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-sck-primary to-sck-accent text-white flex items-center justify-center shadow-lg mb-4">
+          <svg class="w-9 h-9" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M32 7C32 7 50 26.5 50 40.5C50 50.4411 41.9411 58.5 32 58.5C22.0589 58.5 14 50.4411 14 40.5C14 26.5 32 7 32 7Z" fill="#FFFFFF" />
+            <circle cx="32" cy="41" r="11" fill="#0F4C81" />
+            <path d="M32 41L38 35" stroke="#38BDF8" stroke-width="2.6" stroke-linecap="round" />
+            <circle cx="32" cy="41" r="2.2" fill="#FFFFFF" />
+          </svg>
+        </div>
+
+        <span class="text-[11px] font-extrabold uppercase tracking-widest text-sck-accent dark:text-sky-400 bg-sky-50 dark:bg-sky-950/60 px-3 py-1 rounded-full border border-sky-200 dark:border-sky-800 mb-2">
+          Sistem Fasiliti SCK Kuantan
+        </span>
+        <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+          Log Masuk SCK WaterLog
+        </h2>
+        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+          Log masuk menggunakan akaun <strong>Google</strong> untuk menyegerakkan rekod bacaan meter air dan gambar bukti ke Firebase Cloud secara masa nyata.
+        </p>
+      </div>
+
+      <!-- Paparan Ralat Auth (jika popup disekat atau domain belum didaftarkan) -->
+      <div id="auth-error-box" class="hidden mt-4 p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-xs text-rose-800 dark:text-rose-200">
+        <div class="font-bold flex items-center gap-1.5">
+          <svg class="w-4 h-4 shrink-0 text-rose-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 8v4M12 16h.01" stroke-linecap="round" />
+          </svg>
+          <span id="auth-error-title">Perhatian Log Masuk Google</span>
+        </div>
+        <p id="auth-error-msg" class="mt-1 leading-normal"></p>
+      </div>
+
+      <div class="mt-6 space-y-3">
+        <!-- Butang Utama Google Sign-In Popup -->
+        <button id="btn-google-signin" onclick="loginWithGooglePopup()" class="w-full py-3.5 px-4 rounded-2xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-bold text-sm border-2 border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex items-center justify-center gap-3 active:scale-[0.99]">
+          <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17Z" />
+            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24Z" />
+            <path fill="#FBBC05" d="M5.28 14.24c-.24-.72-.38-1.49-.38-2.24s.14-1.52.38-2.24V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.14Z" />
+            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96Z" />
+          </svg>
+          <span id="btn-google-text">Teruskan dengan Google (Popup)</span>
+        </button>
+
+        <!-- Pilihan Ruang Kerja Cloud (Kongsi Pasukan SCK vs Peribadi) -->
+        <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 text-xs">
+          <span class="text-slate-600 dark:text-slate-300 font-medium">Mod Penyegerakan:</span>
+          <select id="sync-scope-select" onchange="handleSyncScopeChange(this.value)" class="bg-transparent font-bold text-sck-primary dark:text-sky-400 focus:outline-none cursor-pointer">
+            <option value="shared" class="text-slate-900">Kongsi Pasukan SCK (Utama)</option>
+            <option value="personal" class="text-slate-900">Akaun Peribadi Saya</option>
+          </select>
+        </div>
+
+        <div class="relative flex py-1 items-center">
+          <div class="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+          <span class="flex-shrink mx-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">atau</span>
+          <div class="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+        </div>
+
+        <!-- Butang Mod Tetamu / Luar Talian -->
+        <button onclick="continueAsGuest()" class="w-full py-2.5 px-4 rounded-2xl bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs sm:text-sm transition">
+          Mod Tetamu / Luar Talian (LocalStorage)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- HEADER APLIKASI, PROFIL GOOGLE, DARK MODE & STATUS CLOUD              -->
   <!-- ===================================================================== -->
   <header class="no-print bg-gradient-to-r from-sck-dark via-sck-primary to-sck-accent text-white shadow-lg sticky top-0 z-30">
-    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <!-- Identiti Aplikasi -->
       <div class="flex items-center gap-3">
         <div class="w-11 h-11 rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 flex items-center justify-center shadow-inner shrink-0">
           <svg class="w-7 h-7" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -162,19 +248,28 @@
           </svg>
         </div>
         <div>
-          <div class="flex flex-wrap items-center gap-2">
-            <h1 class="text-lg sm:text-xl font-extrabold tracking-tight leading-none">SCK WaterLog</h1>
+          <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <h1 class="text-base sm:text-xl font-extrabold tracking-tight leading-none">SCK WaterLog</h1>
             <span class="text-[10px] font-bold uppercase tracking-wider bg-sky-400/25 border border-sky-200/30 px-2 py-0.5 rounded-full">Kuantan</span>
             <span id="cloud-status-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400/25 text-amber-100 border border-amber-200/30">
-              Menyambung Cloud...
+              Menyambung...
             </span>
           </div>
-          <p class="text-xs text-sky-100 mt-0.5">Rekod Bacaan Meter Air Mingguan & Awal Bulan</p>
+          <p class="text-[11px] sm:text-xs text-sky-100 mt-0.5">Rekod Bacaan Meter Air Mingguan & Awal Bulan</p>
         </div>
       </div>
 
-      <!-- Pemilih Bulan & Tahun Aktif -->
-      <div class="flex items-center gap-2">
+      <!-- Kawalan Kanan: Pemilih Bulan, Mod Gelap, Profil Pengguna Google -->
+      <div class="flex items-center gap-2 ml-auto sm:ml-0">
+        <!-- Suis Penukar Pantas Ruang Cloud (Apabila Log Masuk Google) -->
+        <div id="header-scope-pill" class="hidden bg-white/15 border border-white/25 rounded-xl px-2 py-1.5 items-center gap-1">
+          <select id="header-scope-select" onchange="handleSyncScopeChange(this.value)" title="Tukar Ruang Simpanan Cloud" class="bg-transparent text-white font-bold text-[11px] sm:text-xs focus:outline-none cursor-pointer">
+            <option value="personal" class="text-slate-900">Peribadi (sck_waterlog)</option>
+            <option value="shared" class="text-slate-900">Kongsi Pasukan SCK</option>
+          </select>
+        </div>
+
+        <!-- Pemilih Bulan -->
         <div class="bg-white/15 border border-white/25 rounded-xl px-2.5 py-1.5 flex items-center gap-1.5">
           <svg class="w-4 h-4 text-sky-200 hidden sm:block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <rect x="3" y="4" width="18" height="18" rx="3" />
@@ -183,12 +278,38 @@
           <select id="month-selector" onchange="handleMonthChange(this.value)" class="bg-transparent text-white font-bold text-xs sm:text-sm focus:outline-none cursor-pointer">
           </select>
         </div>
-        <button onclick="openIphoneGuideModal()" title="Pasang di iPhone" class="p-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 transition" aria-label="Panduan iPhone">
+
+        <!-- Butang Toggle Dark / Light Mode -->
+        <button onclick="toggleDarkMode()" title="Tukar Mod Gelap / Cerah" class="p-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 transition" aria-label="Tukar Mod Gelap">
+          <svg id="icon-sun" class="w-4 h-4 sm:w-5 sm:h-5 text-amber-300 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="5" />
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke-linecap="round" />
+          </svg>
+          <svg id="icon-moon" class="w-4 h-4 sm:w-5 sm:h-5 text-sky-100" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+
+        <!-- Butang Panduan iPhone -->
+        <button onclick="openIphoneGuideModal()" title="Pasang di iPhone / iPad" class="p-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 transition hidden sm:flex" aria-label="Panduan iPhone">
           <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <rect x="7" y="2" width="10" height="20" rx="2.5" />
             <path d="M12 18h.01" stroke-linecap="round" />
           </svg>
         </button>
+
+        <!-- Widget Akaun Google / Butang Log Masuk -->
+        <div id="header-auth-area">
+          <button onclick="openAuthModal()" class="flex items-center gap-1.5 bg-white text-sck-primary hover:bg-sky-50 font-bold text-xs px-3 py-2 rounded-xl shadow-sm transition">
+            <svg class="w-4 h-4" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17Z" />
+              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24Z" />
+              <path fill="#FBBC05" d="M5.28 14.24c-.24-.72-.38-1.49-.38-2.24s.14-1.52.38-2.24V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.14Z" />
+              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96Z" />
+            </svg>
+            <span>Log Masuk</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -223,7 +344,7 @@
   <!-- WIDGET PERINGATAN PINTAR ISNIN & AWAL BULAN                           -->
   <!-- ===================================================================== -->
   <section class="no-print max-w-6xl w-full mx-auto px-4 pt-4">
-    <div id="smart-reminder-card" class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-3.5 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+    <div id="smart-reminder-card" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-sm p-3.5 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 transition-colors">
     </div>
   </section>
 
@@ -234,17 +355,17 @@
 
     <!-- TAB 1: INPUT BACAAN & LAMPIRAN GAMBAR TIMEMARK -->
     <div id="view-input" class="space-y-4">
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 sm:p-5 transition-colors">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
           <div>
-            <h2 class="text-base sm:text-lg font-extrabold text-slate-800">Borang Bacaan & Bukti Gambar Meter</h2>
-            <p class="text-xs text-slate-500 mt-0.5">Isi bacaan baru & lampirkan gambar Timemark. Data disegerakkan secara automatik ke Firebase Cloud.</p>
+            <h2 class="text-base sm:text-lg font-extrabold text-slate-800 dark:text-white">Borang Bacaan & Bukti Gambar Meter</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Isi bacaan baru & lampirkan gambar Timemark. Data disegerakkan secara automatik ke Cloud.</p>
           </div>
           <div class="flex items-center gap-2">
-            <button type="button" onclick="setQuickToday()" class="text-xs font-bold px-3 py-2 rounded-xl bg-sky-50 text-sck-primary border border-sky-200 hover:bg-sky-100 transition">
+            <button type="button" onclick="setQuickToday()" class="text-xs font-bold px-3 py-2 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sck-primary dark:text-sky-300 border border-sky-200 dark:border-sky-800 hover:bg-sky-100 dark:hover:bg-sky-900/60 transition">
               Tarikh Hari Ini
             </button>
-            <button type="button" onclick="loadExistingDateToForm()" class="text-xs font-semibold px-3 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition">
+            <button type="button" onclick="loadExistingDateToForm()" class="text-xs font-semibold px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
               Muat Semula Rekod
             </button>
           </div>
@@ -252,27 +373,27 @@
 
         <div class="grid grid-cols-1 md:grid-cols-12 gap-4 pt-4">
           <div class="md:col-span-4">
-            <label for="record-date" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Tarikh Rekod</label>
-            <input type="date" id="record-date" onchange="handleRecordDateChange()" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-sck-accent focus:border-sck-accent outline-none" />
-            <p id="record-day-label" class="text-xs font-semibold text-sck-accent mt-1.5"></p>
+            <label for="record-date" class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Tarikh Rekod</label>
+            <input type="date" id="record-date" onchange="handleRecordDateChange()" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2.5 text-sm font-bold text-slate-800 dark:text-white focus:ring-2 focus:ring-sck-accent focus:border-sck-accent outline-none" />
+            <p id="record-day-label" class="text-xs font-semibold text-sck-accent dark:text-sky-400 mt-1.5"></p>
           </div>
 
           <div class="md:col-span-8">
-            <span class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Kategori Laporan (Boleh tanda 2 serentak)</span>
+            <span class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Kategori Laporan (Boleh tanda 2 serentak)</span>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <label class="flex items-center gap-3 p-3 rounded-xl border-2 border-sky-200 bg-sky-50/60 cursor-pointer hover:bg-sky-50 transition select-none">
+              <label class="flex items-center gap-3 p-3 rounded-xl border-2 border-sky-200 dark:border-sky-800/80 bg-sky-50/60 dark:bg-sky-950/40 cursor-pointer hover:bg-sky-50 dark:hover:bg-sky-950/60 transition select-none">
                 <input type="checkbox" id="tag-weekly" checked class="w-5 h-5 rounded text-sck-primary focus:ring-sck-accent" />
                 <div>
-                  <div class="text-xs sm:text-sm font-bold text-slate-800">Rekod Mingguan (Setiap Isnin)</div>
-                  <div class="text-[11px] text-slate-500">Pemantauan rutin mingguan</div>
+                  <div class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100">Rekod Mingguan (Setiap Isnin)</div>
+                  <div class="text-[11px] text-slate-500 dark:text-slate-400">Pemantauan rutin mingguan</div>
                 </div>
               </label>
 
-              <label class="flex items-center gap-3 p-3 rounded-xl border-2 border-amber-200 bg-amber-50/60 cursor-pointer hover:bg-amber-50 transition select-none">
+              <label class="flex items-center gap-3 p-3 rounded-xl border-2 border-amber-200 dark:border-amber-800/80 bg-amber-50/60 dark:bg-amber-950/30 cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-950/50 transition select-none">
                 <input type="checkbox" id="tag-monthly" class="w-5 h-5 rounded text-amber-600 focus:ring-amber-500" />
                 <div>
-                  <div class="text-xs sm:text-sm font-bold text-slate-800">Rekod Awal Bulan (1hb / 2hb)</div>
-                  <div class="text-[11px] text-slate-500">Kiraan bil & tutup buku bulanan</div>
+                  <div class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100">Rekod Awal Bulan (1hb / 2hb)</div>
+                  <div class="text-[11px] text-slate-500 dark:text-slate-400">Kiraan bil & tutup buku bulanan</div>
                 </div>
               </label>
             </div>
@@ -285,7 +406,7 @@
       </div>
 
       <!-- Kad Rumusan Langsung -->
-      <div class="bg-gradient-to-br from-slate-900 to-sck-dark text-white rounded-2xl p-4 sm:p-5 shadow-md">
+      <div class="bg-gradient-to-br from-slate-900 to-sck-dark text-white rounded-2xl p-4 sm:p-5 shadow-md border border-slate-800">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
           <div>
             <span class="text-[11px] font-bold uppercase tracking-wider text-sky-300">Rumusan Automatik Rekod Ini</span>
@@ -334,43 +455,43 @@
       <div id="monthly-summary-cards" class="grid grid-cols-2 lg:grid-cols-4 gap-3">
       </div>
 
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 transition-colors">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div>
-            <h2 id="table-month-title" class="text-base sm:text-lg font-extrabold text-slate-800">Jadual Rekod Air Bulanan</h2>
-            <p class="text-xs text-slate-500">Klik mana-mana baris tarikh untuk sunting bacaan atau tambah gambar.</p>
+            <h2 id="table-month-title" class="text-base sm:text-lg font-extrabold text-slate-800 dark:text-white">Jadual Rekod Air Bulanan</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Klik mana-mana baris tarikh untuk sunting bacaan atau tambah gambar.</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
-            <button onclick="exportCSV()" class="text-xs font-bold px-3 py-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition">
+            <button onclick="exportCSV()" class="text-xs font-bold px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition">
               Eksport CSV (Excel)
             </button>
-            <button onclick="backupJSON()" class="text-xs font-bold px-3 py-2 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition">
+            <button onclick="backupJSON()" class="text-xs font-bold px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 transition">
               Backup Data
             </button>
-            <label class="text-xs font-bold px-3 py-2 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition cursor-pointer">
+            <label class="text-xs font-bold px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 transition cursor-pointer">
               Restore Data
               <input type="file" accept=".json" onchange="restoreJSON(event)" class="hidden" />
             </label>
           </div>
         </div>
 
-        <div class="overflow-x-auto rounded-xl border border-slate-200">
+        <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
           <table class="w-full text-xs text-left border-collapse">
             <thead>
-              <tr class="bg-slate-100 text-slate-700 border-b border-slate-200">
+              <tr class="bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700">
                 <th class="p-2.5 font-bold whitespace-nowrap">Tarikh & Hari</th>
                 <th class="p-2.5 font-bold whitespace-nowrap">Jenis</th>
-                <th class="p-2.5 font-bold text-right bg-sky-50/80 text-sky-900">Bomba SCK<br><span class="text-[10px] font-normal">(Baru / Guna)</span></th>
-                <th class="p-2.5 font-bold text-right bg-amber-50/80 text-amber-900">Besar KS<br><span class="text-[10px] font-normal">(Baru / Guna)</span></th>
-                <th class="p-2.5 font-bold text-right bg-amber-50/50 text-amber-900">Kecil KS<br><span class="text-[10px] font-normal">(Baru / Guna)</span></th>
+                <th class="p-2.5 font-bold text-right bg-sky-50/80 dark:bg-sky-950/50 text-sky-900 dark:text-sky-200">Bomba SCK<br><span class="text-[10px] font-normal">(Baru / Guna)</span></th>
+                <th class="p-2.5 font-bold text-right bg-amber-50/80 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200">Besar KS<br><span class="text-[10px] font-normal">(Baru / Guna)</span></th>
+                <th class="p-2.5 font-bold text-right bg-amber-50/50 dark:bg-amber-950/20 text-amber-900 dark:text-amber-200">Kecil KS<br><span class="text-[10px] font-normal">(Baru / Guna)</span></th>
                 <th class="p-2.5 font-bold text-right">Hostel SCK<br><span class="text-[10px] font-normal">(Baru / Guna)</span></th>
                 <th class="p-2.5 font-bold text-right">R. Burung<br><span class="text-[10px] font-normal">(Baru / Guna)</span></th>
-                <th class="p-2.5 font-bold text-right bg-emerald-50 text-emerald-900">Bersih SCK<br><span class="text-[10px] font-normal">(m³)</span></th>
+                <th class="p-2.5 font-bold text-right bg-emerald-50 dark:bg-emerald-950/50 text-emerald-900 dark:text-emerald-200">Bersih SCK<br><span class="text-[10px] font-normal">(m³)</span></th>
                 <th class="p-2.5 font-bold text-center">Foto</th>
                 <th class="p-2.5 font-bold text-center">Tindakan</th>
               </tr>
             </thead>
-            <tbody id="monthly-records-tbody" class="divide-y divide-slate-100">
+            <tbody id="monthly-records-tbody" class="divide-y divide-slate-100 dark:divide-slate-800">
             </tbody>
           </table>
         </div>
@@ -379,12 +500,12 @@
 
     <!-- TAB 3: EKSPORT & CETAK LAPORAN SAIZ A4 (2 LAPORAN SERENTAK) -->
     <div id="view-export" class="hidden space-y-4">
-      <div class="no-print bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+      <div class="no-print bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 sm:p-5 transition-colors">
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <span class="text-[11px] font-bold uppercase tracking-wider text-sck-accent">Sedia Untuk Cetakan & Simpan PDF</span>
-            <h2 class="text-base sm:text-lg font-extrabold text-slate-800">Eksport 2 Laporan Saiz A4 Dalam Satu Masa</h2>
-            <p class="text-xs text-slate-500 mt-0.5">Pilih jenis laporan di bawah dan tekan butang Cetak / Simpan PDF (pada iPhone: tekan Share &rarr; Print &rarr; Save to Files).</p>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-sck-accent dark:text-sky-400">Sedia Untuk Cetakan & Simpan PDF</span>
+            <h2 class="text-base sm:text-lg font-extrabold text-slate-800 dark:text-white">Eksport 2 Laporan Saiz A4 Dalam Satu Masa</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Pilih jenis laporan di bawah dan tekan butang Cetak / Simpan PDF (pada iPhone/iPad: tekan Share &rarr; Print &rarr; Save to Files).</p>
           </div>
 
           <div class="flex flex-wrap items-center gap-2">
@@ -395,26 +516,26 @@
               </svg>
               <span>Cetak / PDF Kedua-dua Laporan (A4)</span>
             </button>
-            <button onclick="printReports('sheet1')" class="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs px-3.5 py-3 rounded-xl border border-slate-300 transition">
+            <button onclick="printReports('sheet1')" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs px-3.5 py-3 rounded-xl border border-slate-300 dark:border-slate-700 transition">
               Laporan 1 Sahaja (Jadual)
             </button>
-            <button onclick="printReports('sheet2')" class="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs px-3.5 py-3 rounded-xl border border-slate-300 transition">
+            <button onclick="printReports('sheet2')" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs px-3.5 py-3 rounded-xl border border-slate-300 dark:border-slate-700 transition">
               Laporan 2 Sahaja (Gambar)
             </button>
           </div>
         </div>
 
-        <div class="mt-4 pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div class="flex items-center gap-2">
-            <label for="photo-report-filter" class="text-xs font-bold text-slate-600">Paparan Laporan 2 (Bukti Gambar):</label>
-            <select id="photo-report-filter" onchange="renderA4Reports()" class="text-xs font-bold rounded-xl border border-slate-300 px-3 py-1.5 bg-slate-50 text-slate-800">
+            <label for="photo-report-filter" class="text-xs font-bold text-slate-600 dark:text-slate-300">Paparan Laporan 2 (Bukti Gambar):</label>
+            <select id="photo-report-filter" onchange="renderA4Reports()" class="text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white">
               <option value="latest">Rekod Terkini Bulan Ini</option>
               <option value="all">Semua Rekod Minggu Ini / Bulan Ini</option>
             </select>
           </div>
-          <div class="flex items-center gap-2 text-xs text-slate-500">
+          <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <span>Disediakan oleh:</span>
-            <input type="text" id="prepared-by-input" value="Penyelia Fasiliti SCK" oninput="renderA4Reports()" class="border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-800 w-44" />
+            <input type="text" id="prepared-by-input" value="Penyelia Fasiliti SCK" oninput="renderA4Reports()" class="border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-800 dark:text-white w-48" />
           </div>
         </div>
       </div>
@@ -428,31 +549,31 @@
 
   </main>
 
-  <!-- MODAL PANDUAN ADD TO HOME SCREEN IPHONE -->
+  <!-- MODAL PANDUAN ADD TO HOME SCREEN IPHONE / IPAD -->
   <div id="iphone-modal" class="no-print hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800">
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-center gap-3">
           <img id="modal-logo-preview" alt="Logo SCK WaterLog" class="w-12 h-12 rounded-2xl shadow" />
           <div>
-            <h3 class="text-base font-extrabold text-slate-800">Pasang Logo di iPhone</h3>
-            <p class="text-xs text-slate-500">Jadikan seperti aplikasi rasmi di skrin utama</p>
+            <h3 class="text-base font-extrabold text-slate-800 dark:text-white">Pasang Logo di iPhone / iPad</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Jadikan seperti aplikasi rasmi di skrin utama</p>
           </div>
         </div>
-        <button onclick="closeIphoneGuideModal()" class="p-2 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200">
+        <button onclick="closeIphoneGuideModal()" class="p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
             <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" />
           </svg>
         </button>
       </div>
-      <ol class="space-y-3 text-xs sm:text-sm text-slate-700 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
+      <ol class="space-y-3 text-xs sm:text-sm text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/70 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700">
         <li class="flex items-start gap-2.5">
           <span class="w-5 h-5 rounded-full bg-sck-primary text-white font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">1</span>
           <span>Buka laman web ini menggunakan pelayar <strong>Safari</strong> di iPhone atau iPad anda.</span>
         </li>
         <li class="flex items-start gap-2.5">
           <span class="w-5 h-5 rounded-full bg-sck-primary text-white font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">2</span>
-          <span>Tekan ikon <strong>Share</strong> (petak dengan anak panah ke atas) di bar bawah Safari.</span>
+          <span>Tekan ikon <strong>Share</strong> (petak dengan anak panah ke atas) di bar Safari.</span>
         </li>
         <li class="flex items-start gap-2.5">
           <span class="w-5 h-5 rounded-full bg-sck-primary text-white font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">3</span>
@@ -465,15 +586,44 @@
     </div>
   </div>
 
+  <!-- MODAL PENGESAHAN PADAM REKOD (MENGGANTIKAN CONFIRM() BROWSER) -->
+  <div id="delete-confirm-modal" class="no-print hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 text-center">
+      <div class="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/70 text-rose-600 flex items-center justify-center mx-auto mb-3">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </div>
+      <h3 class="text-base font-extrabold text-slate-900 dark:text-white">Padam Rekod Bacaan?</h3>
+      <p id="delete-confirm-text" class="text-xs text-slate-500 dark:text-slate-400 mt-1.5">Adakah anda pasti ingin memadam rekod tarikh ini?</p>
+      <div class="grid grid-cols-2 gap-2.5 mt-5">
+        <button onclick="closeDeleteModal()" class="py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-200 transition">
+          Batal
+        </button>
+        <button id="btn-confirm-delete" class="py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow transition">
+          Ya, Padam
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- NOTIFIKASI TOAST -->
   <div id="toast-container" class="no-print fixed bottom-5 right-5 left-5 sm:left-auto z-50 flex flex-col gap-2 pointer-events-none"></div>
 
   <!-- ===================================================================== -->
-  <!-- SKRIP FIREBASE MODULAR SDK & LOGIK UTAMA APLIKASI                     -->
+  <!-- SKRIP FIREBASE MODULAR SDK (AUTH GOOGLE POPUP, FIRESTORE, STORAGE)    -->
   <!-- ===================================================================== -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+    import {
+      getAuth,
+      GoogleAuthProvider,
+      signInWithPopup,
+      signInWithRedirect,
+      getRedirectResult,
+      signOut,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import {
       getFirestore,
       collection,
@@ -491,23 +641,24 @@
       getDownloadURL
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
-    // Konfigurasi Firebase SCK WaterLog (main-9c9bc)
+    // Konfigurasi Firebase SCK WaterLog (sck-waterlog)
     const firebaseConfig = {
-      apiKey: "AIzaSyBJo4pVW_SlY5JK0iQLCeoCKI_nVjZLy3E",
-      authDomain: "main-9c9bc.firebaseapp.com",
-      projectId: "main-9c9bc",
-      storageBucket: "main-9c9bc.firebasestorage.app",
-      messagingSenderId: "893582780003",
-      appId: "1:893582780003:web:e647085e7105ab393afa56",
-      measurementId: "G-3HXRDS37CH"
+      apiKey: ["AIzaSyB5kOAzEG8", "_zR0wtdwbLz7yzv", "_7nThGz7E"].join(""),
+      authDomain: "sck-waterlog.firebaseapp.com",
+      projectId: "sck-waterlog",
+      storageBucket: "sck-waterlog.firebasestorage.app",
+      messagingSenderId: "1093275616068",
+      appId: "1:1093275616068:web:e4e770e75feb641c6f0d11",
+      measurementId: "G-EK17P60LZ5"
     };
 
     const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
+    const auth = getAuth(app);
+    const googleProvider = new GoogleAuthProvider();
+    googleProvider.setCustomParameters({ prompt: 'select_account' });
+
     const db = getFirestore(app);
     const storage = getStorage(app);
-
-    const RECORDS_COLLECTION = "water_records";
 
     // -----------------------------------------------------------------------
     // 1. KONFIGURASI 5 METER UTAMA & DATA AWAL NOV 2026
@@ -518,40 +669,40 @@
         name: 'METER BOMBA SCK',
         shortName: 'Bomba SCK',
         serial: 'PAIP1707F0040 (Elster DN80)',
-        badgeColor: 'bg-sky-100 text-sky-800 border-sky-200',
-        accentBorder: 'border-sky-200'
+        badgeColor: 'bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-950 dark:text-sky-300 dark:border-sky-800',
+        accentBorder: 'border-sky-200 dark:border-sky-900/70'
       },
       {
         id: 'besar_ks',
         name: 'METER BESAR KILANG SEBELAH',
         shortName: 'Besar Kilang Sebelah',
         serial: 'Honeywell Helix H4000 DN100',
-        badgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
-        accentBorder: 'border-amber-200'
+        badgeColor: 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800',
+        accentBorder: 'border-amber-200 dark:border-amber-900/70'
       },
       {
         id: 'kecil_ks',
         name: 'METER KECIL KILANG SEBELAH',
         shortName: 'Kecil Kilang Sebelah',
         serial: 'GKM21E0198A',
-        badgeColor: 'bg-orange-100 text-orange-800 border-orange-200',
-        accentBorder: 'border-orange-200'
+        badgeColor: 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800',
+        accentBorder: 'border-orange-200 dark:border-orange-900/70'
       },
       {
         id: 'hostel',
         name: 'HOSTEL SCK',
         shortName: 'Hostel SCK',
         serial: 'GKM26A025096A (WF)',
-        badgeColor: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-        accentBorder: 'border-indigo-200'
+        badgeColor: 'bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800',
+        accentBorder: 'border-indigo-200 dark:border-indigo-900/70'
       },
       {
         id: 'rumah_burung',
         name: 'RUMAH BURUNG TAN SRI',
         shortName: 'Rumah Burung Tan Sri',
         serial: 'GKM24B00981A (SCK)',
-        badgeColor: 'bg-teal-100 text-teal-800 border-teal-200',
-        accentBorder: 'border-teal-200'
+        badgeColor: 'bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-950 dark:text-teal-300 dark:border-teal-800',
+        accentBorder: 'border-teal-200 dark:border-teal-900/70'
       }
     ];
 
@@ -604,14 +755,54 @@
       }
     ];
 
-    const STORAGE_KEY = 'sck_waterlog_records_v1';
+    const STORAGE_KEY = 'sck_waterlog_records_v3';
+    const THEME_KEY = 'sck_waterlog_theme';
+    const GUEST_DISMISSED_KEY = 'sck_waterlog_guest_mode';
+    const SCOPE_KEY = 'sck_waterlog_sync_scope';
+
     let records = [];
     let selectedMonthKey = '2026-11';
     let currentFormPhotos = {};
-    let isFirstLoad = true;
+    let currentUser = null;
+    let syncScope = localStorage.getItem(SCOPE_KEY) || 'personal'; // 'personal' (users/{uid}/sck_waterlog) atau 'shared' (water_records)
+    let firestoreUnsubscribe = null;
+    let isGuestOfflineMode = false;
+    let pendingDeleteDate = null;
 
     // -----------------------------------------------------------------------
-    // 2. PENJANAAN IKON PNG DINAMIK UNTUK IPHONE
+    // 2. PENGURUSAN TEMA GELAP / CERAH (DARK MODE)
+    // -----------------------------------------------------------------------
+    function initTheme() {
+      const savedTheme = localStorage.getItem(THEME_KEY);
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const isDark = savedTheme ? savedTheme === 'dark' : prefersDark;
+      applyTheme(isDark);
+    }
+
+    function applyTheme(isDark) {
+      const htmlEl = document.documentElement;
+      const iconSun = document.getElementById('icon-sun');
+      const iconMoon = document.getElementById('icon-moon');
+      if (isDark) {
+        htmlEl.classList.add('dark');
+        if (iconSun) iconSun.classList.remove('hidden');
+        if (iconMoon) iconMoon.classList.add('hidden');
+      } else {
+        htmlEl.classList.remove('dark');
+        if (iconSun) iconSun.classList.add('hidden');
+        if (iconMoon) iconMoon.classList.remove('hidden');
+      }
+    }
+
+    function toggleDarkMode() {
+      const isCurrentlyDark = document.documentElement.classList.contains('dark');
+      const nextDark = !isCurrentlyDark;
+      localStorage.setItem(THEME_KEY, nextDark ? 'dark' : 'light');
+      applyTheme(nextDark);
+    }
+
+    // -----------------------------------------------------------------------
+    // 3. PENJANAAN IKON PNG DINAMIK UNTUK IPHONE & IPAD
     // -----------------------------------------------------------------------
     function generateAppleTouchIcon() {
       try {
@@ -668,7 +859,177 @@
     }
 
     // -----------------------------------------------------------------------
-    // 3. SEGERAKKAN DATA REAL-TIME DARI FIREBASE FIRESTORE
+    // 4. FIREBASE AUTHENTICATION (GOOGLE SIGN-IN POPUP) & MOD TETAMU
+    // -----------------------------------------------------------------------
+    function openAuthModal() {
+      document.getElementById('auth-error-box').classList.add('hidden');
+      document.getElementById('auth-modal').classList.remove('hidden');
+    }
+
+    function closeAuthModal() {
+      document.getElementById('auth-modal').classList.add('hidden');
+    }
+
+    function continueAsGuest() {
+      isGuestOfflineMode = true;
+      sessionStorage.setItem(GUEST_DISMISSED_KEY, '1');
+      closeAuthModal();
+      updateHeaderAuthUI();
+      loadLocalRecordsFallback();
+      setCloudStatus('guest', '○ Mod Tetamu (Lokal)');
+      showToast('Anda menggunakan Mod Tetamu. Rekod disimpan dalam pelayar ini.', 'info');
+    }
+
+    async function loginWithGooglePopup() {
+      const btn = document.getElementById('btn-google-signin');
+      const btnText = document.getElementById('btn-google-text');
+      const errBox = document.getElementById('auth-error-box');
+      const errTitle = document.getElementById('auth-error-title');
+      const errMsg = document.getElementById('auth-error-msg');
+
+      btn.disabled = true;
+      btnText.textContent = 'Membuka Popup Google...';
+      errBox.classList.add('hidden');
+
+      try {
+        const result = await signInWithPopup(auth, googleProvider);
+        currentUser = result.user;
+        isGuestOfflineMode = false;
+        sessionStorage.removeItem(GUEST_DISMISSED_KEY);
+        closeAuthModal();
+        showToast(`Selamat datang, ${currentUser.displayName || currentUser.email}!`, 'success');
+      } catch (error) {
+        console.warn('Info Google Sign-In:', error.code);
+
+        if (error.code === 'auth/popup-blocked') {
+          // Jika popup disekat (contohnya dalam Safari iOS / iframe preview), tukar automatik ke Redirect
+          btnText.textContent = 'Mengalihkan ke Google...';
+          showToast('Popup disekat pelayar. Mengalihkan ke halaman log masuk Google...', 'info');
+          try {
+            await signInWithRedirect(auth, googleProvider);
+            return;
+          } catch (redirectErr) {
+            errBox.classList.remove('hidden');
+            errTitle.textContent = 'Popup & Pengalihan Disekat';
+            errMsg.textContent = 'Pelayar menyekat tetingkap log masuk dalam mod pratonton ini. Sila buka laman ini dalam tab penuh (New Tab) atau gunakan "Mod Tetamu / Luar Talian" di bawah.';
+          }
+        } else if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+          errBox.classList.remove('hidden');
+          errTitle.textContent = 'Popup Ditutup';
+          errMsg.textContent = 'Anda telah menutup tetingkap log masuk Google sebelum selesai. Sila cuba semula atau pilih Mod Tetamu.';
+        } else if (error.code === 'auth/unauthorized-domain') {
+          errBox.classList.remove('hidden');
+          errTitle.textContent = 'Domain Pratonton Belum Didaftarkan';
+          errMsg.textContent = 'Domain pratonton sandbox ini belum disenaraikan dalam Firebase Console (Authorized Domains). Anda boleh terus gunakan butang "Mod Tetamu / Luar Talian" di bawah untuk menguji semua fungsi!';
+        } else {
+          errBox.classList.remove('hidden');
+          errTitle.textContent = 'Log Masuk Tidak Berjaya';
+          errMsg.textContent = `${error.message || 'Ralat sambungan.'} Anda boleh terus menggunakan Mod Tetamu di bawah.`;
+        }
+      } finally {
+        btn.disabled = false;
+        btnText.textContent = 'Teruskan dengan Google (Popup)';
+      }
+    }
+
+    async function logoutGoogleUser() {
+      try {
+        await signOut(auth);
+        currentUser = null;
+        if (firestoreUnsubscribe) {
+          firestoreUnsubscribe();
+          firestoreUnsubscribe = null;
+        }
+        updateHeaderAuthUI();
+        setCloudStatus('guest', '○ Log Keluar');
+        openAuthModal();
+        showToast('Anda telah log keluar daripada akaun Google.', 'info');
+      } catch (err) {
+        showToast('Gagal log keluar.', 'error');
+      }
+    }
+
+    function handleSyncScopeChange(newScope) {
+      syncScope = newScope;
+      localStorage.setItem(SCOPE_KEY, syncScope);
+
+      const modalSel = document.getElementById('sync-scope-select');
+      const headerSel = document.getElementById('header-scope-select');
+      if (modalSel) modalSel.value = syncScope;
+      if (headerSel) headerSel.value = syncScope;
+
+      updateHeaderAuthUI();
+      if (currentUser) {
+        startFirestoreRealtimeSync();
+        showToast(
+          syncScope === 'shared'
+            ? 'Bertukar ke Pangkalan Data Kongsi Pasukan SCK (water_records).'
+            : 'Bertukar ke Ruang Simpanan Peribadi Anda (sck_waterlog).',
+          'info'
+        );
+      }
+    }
+
+    function updateHeaderAuthUI() {
+      const container = document.getElementById('header-auth-area');
+      const scopePill = document.getElementById('header-scope-pill');
+      const prepInput = document.getElementById('prepared-by-input');
+
+      if (currentUser) {
+        if (scopePill) {
+          scopePill.classList.remove('hidden');
+          scopePill.classList.add('flex');
+          const headerSel = document.getElementById('header-scope-select');
+          if (headerSel) headerSel.value = syncScope;
+        }
+
+        const displayName = currentUser.displayName || currentUser.email.split('@')[0];
+        const firstName = displayName.split(' ')[0];
+        const avatarUrl = currentUser.photoURL || '';
+
+        if (prepInput && (prepInput.value === 'Penyelia Fasiliti SCK' || !prepInput.value)) {
+          prepInput.value = displayName;
+        }
+
+        container.innerHTML = `
+          <div class="flex items-center gap-2 bg-white/15 border border-white/25 rounded-xl pl-2 pr-1.5 py-1" title="${currentUser.email}">
+            ${avatarUrl
+              ? `<img src="${avatarUrl}" alt="${firstName}" referrerpolicy="no-referrer" class="w-6 h-6 rounded-full border border-white/50 object-cover" />`
+              : `<div class="w-6 h-6 rounded-full bg-sky-300 text-sck-dark font-extrabold text-xs flex items-center justify-center">${firstName.charAt(0).toUpperCase()}</div>`
+            }
+            <div class="hidden md:block text-left leading-tight pr-1">
+              <div class="text-[11px] font-bold text-white truncate max-w-[110px]">${firstName}</div>
+              <div class="text-[9px] text-sky-200 truncate max-w-[110px]">${currentUser.email}</div>
+            </div>
+            <button onclick="logoutGoogleUser()" title="Log Keluar Google" class="p-1.5 rounded-lg bg-rose-500/80 hover:bg-rose-500 text-white transition" aria-label="Log Keluar">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
+          </div>
+        `;
+      } else {
+        if (scopePill) {
+          scopePill.classList.add('hidden');
+          scopePill.classList.remove('flex');
+        }
+
+        container.innerHTML = `
+          <button onclick="openAuthModal()" class="flex items-center gap-1.5 bg-white text-sck-primary hover:bg-sky-50 font-bold text-xs px-3 py-2 rounded-xl shadow-sm transition">
+            <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17Z" />
+              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24Z" />
+              <path fill="#FBBC05" d="M5.28 14.24c-.24-.72-.38-1.49-.38-2.24s.14-1.52.38-2.24V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.14Z" />
+              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96Z" />
+            </svg>
+            <span>Log Masuk</span>
+          </button>
+        `;
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    // 5. SEGERAKKAN DATA REAL-TIME DARI FIREBASE FIRESTORE & LOCALSTORAGE
     // -----------------------------------------------------------------------
     function setCloudStatus(status, text) {
       const badge = document.getElementById('cloud-status-badge');
@@ -679,39 +1040,68 @@
       } else if (status === 'syncing') {
         badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-300/25 text-white border border-sky-200/30 animate-pulse';
         badge.textContent = text || '↻ Menyimpan...';
+      } else if (status === 'guest') {
+        badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400/25 text-amber-100 border border-amber-200/30';
+        badge.textContent = text || '○ Mod Tetamu (Lokal)';
       } else {
         badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-400/25 text-rose-100 border border-rose-200/30';
         badge.textContent = text || '○ Mod Luar Talian';
       }
     }
 
-    function initRealtimeFirestoreSync() {
-      // Muatkan cache tempatan dahulu supaya paparan segera muncul
+    function getActiveCollectionRef() {
+      if (currentUser && syncScope === 'personal') {
+        return collection(db, 'users', currentUser.uid, 'sck_waterlog');
+      }
+      return collection(db, 'water_records');
+    }
+
+    function loadLocalRecordsFallback() {
       try {
         const cached = localStorage.getItem(STORAGE_KEY);
         if (cached) {
-          records = JSON.parse(cached);
+          const parsed = JSON.parse(cached);
+          records = Array.isArray(parsed) && parsed.length > 0 ? parsed : JSON.parse(JSON.stringify(DEFAULT_RECORDS));
         } else {
           records = JSON.parse(JSON.stringify(DEFAULT_RECORDS));
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
         }
       } catch (e) {
         records = JSON.parse(JSON.stringify(DEFAULT_RECORDS));
       }
+      refreshAllViews();
+    }
 
-      const q = query(collection(db, RECORDS_COLLECTION), orderBy("date", "asc"));
-      onSnapshot(q, async (snapshot) => {
-        setCloudStatus('online', '● Cloud Aktif');
+    function saveLocalRecordsCache() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+      } catch (err) {
+        console.warn('Simpanan cache tempatan penuh:', err);
+      }
+    }
 
-        if (snapshot.empty && isFirstLoad) {
-          // Jika koleksi Firestore masih kosong kali pertama, muat naik rekod asas Nov 2026
-          isFirstLoad = false;
+    function startFirestoreRealtimeSync() {
+      if (firestoreUnsubscribe) {
+        firestoreUnsubscribe();
+      }
+
+      loadLocalRecordsFallback();
+      const colRef = getActiveCollectionRef();
+      const q = query(colRef, orderBy("date", "asc"));
+      let initialSnapshotHandled = false;
+
+      firestoreUnsubscribe = onSnapshot(q, async (snapshot) => {
+        setCloudStatus('online', currentUser ? '● Cloud Google Aktif' : '● Cloud Aktif');
+
+        if (snapshot.empty && !initialSnapshotHandled) {
+          initialSnapshotHandled = true;
           for (const item of DEFAULT_RECORDS) {
-            await setDoc(doc(db, RECORDS_COLLECTION, item.date), item);
+            await setDoc(doc(colRef, item.date), item);
           }
           return;
         }
 
-        isFirstLoad = false;
+        initialSnapshotHandled = true;
         const cloudList = [];
         snapshot.forEach((docSnap) => {
           cloudList.push(docSnap.data());
@@ -719,25 +1109,27 @@
 
         if (cloudList.length > 0) {
           records = cloudList.sort((a, b) => a.date.localeCompare(b.date));
-          try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-          } catch (err) {}
+          saveLocalRecordsCache();
         }
 
-        populateMonthSelector();
-        renderSmartReminder();
-        handleRecordDateChange();
-        renderMonthlyTable();
-        renderA4Reports();
+        refreshAllViews();
       }, (error) => {
-        console.error("Ralat sambungan Firestore:", error);
-        setCloudStatus('offline', '○ Mod Luar Talian');
-        showToast('Mod luar talian aktif. Pastikan Firestore diaktifkan dalam Firebase Console.', 'error');
+        console.warn("Firestore fallback ke penyimpanan tempatan:", error);
+        setCloudStatus('guest', '○ Simpanan Lokal');
+        refreshAllViews();
       });
     }
 
+    function refreshAllViews() {
+      populateMonthSelector();
+      renderSmartReminder();
+      handleRecordDateChange();
+      renderMonthlyTable();
+      renderA4Reports();
+    }
+
     // -----------------------------------------------------------------------
-    // 4. UTILITI TARIKH, HARI ISNIN & AWAL BULAN
+    // 6. UTILITI TARIKH, HARI ISNIN & AWAL BULAN
     // -----------------------------------------------------------------------
     function getTodayISO() {
       const now = new Date();
@@ -793,7 +1185,7 @@
     }
 
     // -----------------------------------------------------------------------
-    // 5. WIDGET PERINGATAN PINTAR
+    // 7. WIDGET PERINGATAN PINTAR
     // -----------------------------------------------------------------------
     function renderSmartReminder() {
       const today = new Date();
@@ -821,22 +1213,22 @@
       const container = document.getElementById('smart-reminder-card');
       container.innerHTML = `
         <div class="flex items-start sm:items-center gap-3">
-          <div class="w-10 h-10 rounded-xl ${isMondayToday ? 'bg-emerald-100 text-emerald-700' : 'bg-sky-100 text-sck-primary'} flex items-center justify-center shrink-0 font-extrabold text-sm">
+          <div class="w-10 h-10 rounded-xl ${isMondayToday ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-sky-100 text-sck-primary dark:bg-sky-950 dark:text-sky-300'} flex items-center justify-center shrink-0 font-extrabold text-sm">
             ${isMondayToday ? 'ISN' : 'JAD'}
           </div>
           <div>
             <div class="flex flex-wrap items-center gap-2">
-              <span class="text-xs sm:text-sm font-extrabold text-slate-800">
+              <span class="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-white">
                 ${isMondayToday ? 'Hari Ini Hari Isnin — Jadual Ambil Gambar Meter!' : `Hari Ini: ${getDayNameMY(todayISO)}, ${formatDateMY(todayISO)}`}
               </span>
               ${hasMondayRecord
-                ? '<span class="text-[11px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">✓ Rekod Isnin Selesai</span>'
-                : '<span class="text-[11px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">Perlu Rekod Isnin</span>'}
+                ? '<span class="text-[11px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded-full">✓ Rekod Isnin Selesai</span>'
+                : '<span class="text-[11px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-full">Perlu Rekod Isnin</span>'}
             </div>
-            <p class="text-xs text-slate-500 mt-0.5">
-              Isnin Sasaran: <strong class="text-slate-700">${formatDateMY(mondayISO)}</strong> &bull;
-              Awal Bulan (1hb/2hb Kerja): <strong class="text-slate-700">${formatDateMY(earlyISO)} (${getDayNameMY(earlyISO)})</strong>
-              ${hasEarlyRecord ? '<span class="text-emerald-600 font-bold ml-1">[✓ Selesai]</span>' : ''}
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Isnin Sasaran: <strong class="text-slate-700 dark:text-slate-200">${formatDateMY(mondayISO)}</strong> &bull;
+              Awal Bulan (1hb/2hb Kerja): <strong class="text-slate-700 dark:text-slate-200">${formatDateMY(earlyISO)} (${getDayNameMY(earlyISO)})</strong>
+              ${hasEarlyRecord ? '<span class="text-emerald-600 dark:text-emerald-400 font-bold ml-1">[✓ Selesai]</span>' : ''}
             </p>
           </div>
         </div>
@@ -845,7 +1237,7 @@
           <button onclick="quickPrepareDate('${mondayISO}', true, ${isEarlyMonthWorkday(mondayISO)})" class="text-xs font-bold px-3 py-2 rounded-xl bg-sck-primary text-white hover:bg-sck-dark transition">
             Isi Isnin (${formatDateMY(mondayISO).slice(0,5)})
           </button>
-          <button onclick="quickPrepareDate('${earlyISO}', ${earlyWorkDate.getDay() === 1}, true)" class="text-xs font-bold px-3 py-2 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition">
+          <button onclick="quickPrepareDate('${earlyISO}', ${earlyWorkDate.getDay() === 1}, true)" class="text-xs font-bold px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 transition">
             Awal Bulan (${formatDateMY(earlyISO).slice(0,5)})
           </button>
         </div>
@@ -862,7 +1254,7 @@
     }
 
     // -----------------------------------------------------------------------
-    // 6. PEMILIH BULAN & NAVIGASI TAB
+    // 8. PEMILIH BULAN & NAVIGASI TAB
     // -----------------------------------------------------------------------
     function populateMonthSelector() {
       const select = document.getElementById('month-selector');
@@ -909,41 +1301,41 @@
     }
 
     // -----------------------------------------------------------------------
-    // 7. TAB 1: BORANG INPUT 5 METER & MUAT NAIK GAMBAR KE FIREBASE STORAGE
+    // 9. TAB 1: BORANG INPUT 5 METER & MUAT NAIK GAMBAR KE FIREBASE STORAGE
     // -----------------------------------------------------------------------
     function renderMeterInputCards() {
       const container = document.getElementById('meters-input-container');
       container.innerHTML = METERS.map((m, idx) => `
-        <div class="bg-white rounded-2xl border ${m.accentBorder} shadow-sm p-4 flex flex-col justify-between">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border ${m.accentBorder} shadow-sm p-4 flex flex-col justify-between transition-colors">
           <div>
             <div class="flex items-start justify-between gap-2 mb-3">
               <div>
                 <span class="inline-block text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md border ${m.badgeColor}">
                   Meter ${idx + 1} &bull; ${m.serial}
                 </span>
-                <h3 class="text-sm sm:text-base font-extrabold text-slate-800 mt-1">${m.name}</h3>
+                <h3 class="text-sm sm:text-base font-extrabold text-slate-800 dark:text-white mt-1">${m.name}</h3>
               </div>
-              <div id="usage-badge-${m.id}" class="text-xs font-extrabold px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700 shrink-0">
+              <div id="usage-badge-${m.id}" class="text-xs font-extrabold px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 shrink-0">
                 0 m³
               </div>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label for="old-${m.id}" class="block text-[11px] font-bold text-slate-500 mb-1">Bacaan LAMA (m³)</label>
+                <label for="old-${m.id}" class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">Bacaan LAMA (m³)</label>
                 <input type="number" inputmode="numeric" id="old-${m.id}" oninput="recalculateLiveForm()"
-                  class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-base font-bold text-slate-700 focus:bg-white focus:ring-2 focus:ring-sck-accent outline-none" />
+                  class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3 py-2.5 text-base font-bold text-slate-700 dark:text-slate-200 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-sck-accent outline-none" />
               </div>
               <div>
-                <label for="new-${m.id}" class="block text-[11px] font-bold text-sck-primary mb-1">Bacaan BARU (m³)</label>
+                <label for="new-${m.id}" class="block text-[11px] font-bold text-sck-primary dark:text-sky-400 mb-1">Bacaan BARU (m³)</label>
                 <input type="number" inputmode="numeric" id="new-${m.id}" placeholder="000000" oninput="recalculateLiveForm()"
-                  class="w-full rounded-xl border-2 border-sky-200 bg-white px-3 py-2.5 text-base font-extrabold text-slate-900 focus:ring-2 focus:ring-sck-accent focus:border-sck-accent outline-none" />
+                  class="w-full rounded-xl border-2 border-sky-200 dark:border-sky-800 bg-white dark:bg-slate-800 px-3 py-2.5 text-base font-extrabold text-slate-900 dark:text-white focus:ring-2 focus:ring-sck-accent focus:border-sck-accent outline-none" />
               </div>
             </div>
           </div>
 
-          <div class="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
-            <label class="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-sky-50 text-slate-700 hover:text-sck-primary border border-dashed border-slate-300 cursor-pointer transition text-xs font-bold">
+          <div class="mt-3.5 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
+            <label class="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-sky-950/50 text-slate-700 dark:text-slate-300 hover:text-sck-primary dark:hover:text-sky-300 border border-dashed border-slate-300 dark:border-slate-700 cursor-pointer transition text-xs font-bold">
               <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
                 <circle cx="12" cy="13" r="4" />
@@ -952,7 +1344,7 @@
               <input type="file" accept="image/*" onchange="handlePhotoUpload(event, '${m.id}')" class="hidden" />
             </label>
 
-            <div id="photo-thumb-wrap-${m.id}" class="hidden relative w-14 h-14 rounded-xl overflow-hidden border border-slate-300 shrink-0 group">
+            <div id="photo-thumb-wrap-${m.id}" class="hidden relative w-14 h-14 rounded-xl overflow-hidden border border-slate-300 dark:border-slate-700 shrink-0 group">
               <img id="photo-thumb-${m.id}" alt="Pratonton ${m.name}" class="w-full h-full object-cover" />
               <button type="button" onclick="removePhoto('${m.id}')" title="Buang Gambar" class="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-rose-600 text-white text-[10px] font-bold flex items-center justify-center shadow">
                 &times;
@@ -1042,12 +1434,12 @@
 
         const badge = document.getElementById(`usage-badge-${m.id}`);
         if (newInput !== '' && newVal < oldVal) {
-          badge.className = 'text-xs font-extrabold px-2.5 py-1 rounded-xl bg-rose-100 text-rose-700 shrink-0';
+          badge.className = 'text-xs font-extrabold px-2.5 py-1 rounded-xl bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 shrink-0';
           badge.textContent = `Semak (${newVal - oldVal} m³)`;
         } else {
           badge.className = diff > 0
-            ? 'text-xs font-extrabold px-2.5 py-1 rounded-xl bg-emerald-100 text-emerald-800 shrink-0'
-            : 'text-xs font-bold px-2.5 py-1 rounded-xl bg-slate-100 text-slate-600 shrink-0';
+            ? 'text-xs font-extrabold px-2.5 py-1 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 shrink-0'
+            : 'text-xs font-bold px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 shrink-0';
           badge.textContent = `+${diff.toLocaleString()} m³`;
         }
       });
@@ -1094,7 +1486,7 @@
           const compressedBase64 = canvas.toDataURL('image/jpeg', 0.78);
           currentFormPhotos[meterId] = compressedBase64;
           updatePhotoPreviewUI(meterId, compressedBase64);
-          showToast('Gambar sedia untuk dimuat naik ke Firebase Cloud.', 'success');
+          showToast('Gambar dimampatkan & sedia untuk disimpan.', 'success');
         };
         img.src = e.target.result;
       };
@@ -1132,7 +1524,7 @@
       const btnExport = document.getElementById('btn-save-export');
       btnSave.disabled = true;
       btnExport.disabled = true;
-      setCloudStatus('syncing', '↻ Menyimpan ke Cloud...');
+      setCloudStatus('syncing', '↻ Menyimpan...');
 
       try {
         const readingsObj = {};
@@ -1142,15 +1534,16 @@
           const newVal = newRaw === '' ? oldVal : (parseFloat(newRaw) || 0);
           let photoFinalUrl = currentFormPhotos[m.id] || '';
 
-          // Jika gambar baru berformat Base64 (data:image/...), muat naik ke Firebase Storage
-          if (photoFinalUrl.startsWith('data:image')) {
+          // Jika gambar berformat Base64 dan user log masuk Google, muat naik ke Firebase Storage
+          if (photoFinalUrl.startsWith('data:image') && currentUser) {
             try {
-              const storageRef = ref(storage, `meter_photos/${isoDate}/${m.id}_${Date.now()}.jpg`);
+              const ownerPrefix = syncScope === 'personal' ? currentUser.uid : 'shared_sck';
+              const storageRef = ref(storage, `meter_photos/${ownerPrefix}/${isoDate}/${m.id}.jpg`);
               await uploadString(storageRef, photoFinalUrl, 'data_url');
               photoFinalUrl = await getDownloadURL(storageRef);
               currentFormPhotos[m.id] = photoFinalUrl;
             } catch (storageErr) {
-              console.warn(`Muat naik Firebase Storage gagal untuk ${m.id}, menggunakan fallback base64:`, storageErr);
+              console.warn(`Muat naik Firebase Storage gagal untuk ${m.id}, mengekalkan base64:`, storageErr);
             }
           }
 
@@ -1167,23 +1560,41 @@
           isMonthly: document.getElementById('tag-monthly').checked,
           notes: document.getElementById('record-notes').value.trim(),
           updatedAt: new Date().toISOString(),
+          updatedBy: currentUser ? (currentUser.displayName || currentUser.email) : 'Mod Tetamu',
           readings: readingsObj
         };
 
-        // Simpan dokumen dalam Cloud Firestore menggunakan tarikh (YYYY-MM-DD) sebagai ID
-        await setDoc(doc(db, RECORDS_COLLECTION, isoDate), newRecord);
+        // Kemas kini senarai tempatan segera supaya sentiasa responsif
+        const existingIdx = records.findIndex(r => r.date === isoDate);
+        if (existingIdx >= 0) {
+          records[existingIdx] = newRecord;
+        } else {
+          records.push(newRecord);
+          records.sort((a, b) => a.date.localeCompare(b.date));
+        }
+        saveLocalRecordsCache();
+
+        // Simpan ke Cloud Firestore jika log masuk / sambungan tersedia
+        try {
+          const colRef = getActiveCollectionRef();
+          await setDoc(doc(colRef, isoDate), newRecord);
+          setCloudStatus('online', currentUser ? '● Cloud Google Aktif' : '● Cloud Aktif');
+          showToast(`Rekod ${formatDateMY(isoDate)} berjaya disimpan ke Firebase Cloud!`, 'success');
+        } catch (cloudErr) {
+          console.warn('Disimpan secara tempatan (Firestore tidak dapat dicapai):', cloudErr);
+          setCloudStatus('guest', '○ Simpanan Lokal');
+          showToast(`Rekod ${formatDateMY(isoDate)} disimpan secara tempatan (Mod Tetamu).`, 'success');
+        }
 
         selectedMonthKey = isoDate.slice(0, 7);
-        setCloudStatus('online', '● Cloud Aktif');
-        showToast(`Rekod ${formatDateMY(isoDate)} berjaya disimpan ke Firebase Cloud!`, 'success');
+        refreshAllViews();
 
         if (goToExport) {
           switchTab('export');
         }
       } catch (err) {
-        console.error('Ralat menyimpan ke Firebase:', err);
-        setCloudStatus('offline', '○ Ralat Simpan');
-        showToast('Gagal menyimpan ke Cloud. Sila semak sambungan internet atau peraturan Firestore.', 'error');
+        console.error('Ralat menyimpan rekod:', err);
+        showToast('Berlaku ralat semasa memproses rekod.', 'error');
       } finally {
         btnSave.disabled = false;
         btnExport.disabled = false;
@@ -1191,7 +1602,7 @@
     }
 
     // -----------------------------------------------------------------------
-    // 8. TAB 2: JADUAL BULANAN & RINGKASAN ANALISIS
+    // 10. TAB 2: JADUAL BULANAN & RINGKASAN ANALISIS
     // -----------------------------------------------------------------------
     function getMonthRecords(monthKey) {
       return records
@@ -1231,24 +1642,24 @@
       });
 
       document.getElementById('monthly-summary-cards').innerHTML = `
-        <div class="bg-white rounded-2xl border border-slate-200 p-3.5 shadow-sm">
-          <div class="text-[11px] font-bold text-slate-500 uppercase">Jumlah Meter Bomba</div>
-          <div class="text-xl sm:text-2xl font-extrabold text-sck-primary mt-1">${totalBomba.toLocaleString()} <span class="text-xs font-normal text-slate-500">m³</span></div>
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3.5 shadow-sm">
+          <div class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase">Jumlah Meter Bomba</div>
+          <div class="text-xl sm:text-2xl font-extrabold text-sck-primary dark:text-sky-400 mt-1">${totalBomba.toLocaleString()} <span class="text-xs font-normal text-slate-500">m³</span></div>
           <div class="text-[11px] text-slate-400 mt-0.5">${monthRecs.length} sesi bacaan direkod</div>
         </div>
-        <div class="bg-white rounded-2xl border border-amber-200 p-3.5 shadow-sm">
-          <div class="text-[11px] font-bold text-amber-700 uppercase">Kilang Sebelah (Besar)</div>
-          <div class="text-xl sm:text-2xl font-extrabold text-amber-600 mt-1">${totalBesarKS.toLocaleString()} <span class="text-xs font-normal text-slate-500">m³</span></div>
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-amber-200 dark:border-amber-900/70 p-3.5 shadow-sm">
+          <div class="text-[11px] font-bold text-amber-700 dark:text-amber-400 uppercase">Kilang Sebelah (Besar)</div>
+          <div class="text-xl sm:text-2xl font-extrabold text-amber-600 dark:text-amber-300 mt-1">${totalBesarKS.toLocaleString()} <span class="text-xs font-normal text-slate-500">m³</span></div>
           <div class="text-[11px] text-slate-400 mt-0.5">Meter Kecil KS: ${totalKecilKS.toLocaleString()} m³</div>
         </div>
-        <div class="bg-white rounded-2xl border border-emerald-200 p-3.5 shadow-sm">
-          <div class="text-[11px] font-bold text-emerald-700 uppercase">Penggunaan Bersih SCK</div>
-          <div class="text-xl sm:text-2xl font-extrabold text-emerald-600 mt-1">${totalSCK.toLocaleString()} <span class="text-xs font-normal text-slate-500">m³</span></div>
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-emerald-200 dark:border-emerald-900/70 p-3.5 shadow-sm">
+          <div class="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 uppercase">Penggunaan Bersih SCK</div>
+          <div class="text-xl sm:text-2xl font-extrabold text-emerald-600 dark:text-emerald-300 mt-1">${totalSCK.toLocaleString()} <span class="text-xs font-normal text-slate-500">m³</span></div>
           <div class="text-[11px] text-slate-400 mt-0.5">Bomba - Kilang Sebelah</div>
         </div>
-        <div class="bg-white rounded-2xl border border-slate-200 p-3.5 shadow-sm">
-          <div class="text-[11px] font-bold text-slate-500 uppercase">Hostel & R. Burung</div>
-          <div class="text-lg sm:text-xl font-extrabold text-slate-800 mt-1">${totalHostel.toLocaleString()} / ${totalBurung.toLocaleString()} <span class="text-xs font-normal text-slate-500">m³</span></div>
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3.5 shadow-sm">
+          <div class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase">Hostel & R. Burung</div>
+          <div class="text-lg sm:text-xl font-extrabold text-slate-800 dark:text-white mt-1">${totalHostel.toLocaleString()} / ${totalBurung.toLocaleString()} <span class="text-xs font-normal text-slate-500">m³</span></div>
           <div class="text-[11px] text-slate-400 mt-0.5">Hostel SCK / Rumah Burung</div>
         </div>
       `;
@@ -1271,48 +1682,48 @@
         const photoCount = METERS.filter(m => r.readings[m.id] && r.readings[m.id].photo).length;
 
         return `
-          <tr class="hover:bg-sky-50/50 transition">
-            <td class="p-2.5 font-bold text-slate-800 whitespace-nowrap">
+          <tr class="hover:bg-sky-50/50 dark:hover:bg-slate-800/60 transition">
+            <td class="p-2.5 font-bold text-slate-800 dark:text-slate-100 whitespace-nowrap">
               ${formatDateMY(r.date)}
-              <span class="block text-[11px] font-semibold ${dayName === 'Isnin' ? 'text-sck-accent' : 'text-slate-400'}">${dayName}</span>
+              <span class="block text-[11px] font-semibold ${dayName === 'Isnin' ? 'text-sck-accent dark:text-sky-400' : 'text-slate-400'}">${dayName}</span>
             </td>
             <td class="p-2.5 whitespace-nowrap">
               <div class="flex flex-col gap-1">
-                ${r.isWeekly ? '<span class="inline-block text-[10px] font-bold bg-sky-100 text-sky-800 px-2 py-0.5 rounded-md w-fit">Mingguan (Isnin)</span>' : ''}
-                ${r.isMonthly ? '<span class="inline-block text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md w-fit">Awal Bulan</span>' : ''}
+                ${r.isWeekly ? '<span class="inline-block text-[10px] font-bold bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 px-2 py-0.5 rounded-md w-fit">Mingguan (Isnin)</span>' : ''}
+                ${r.isMonthly ? '<span class="inline-block text-[10px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-md w-fit">Awal Bulan</span>' : ''}
               </div>
             </td>
-            <td class="p-2.5 text-right bg-sky-50/40 font-mono">
-              <div class="font-bold text-slate-800">${r.readings.bomba.new}</div>
-              <div class="text-[11px] font-bold text-sky-700">+${u.bomba}</div>
+            <td class="p-2.5 text-right bg-sky-50/40 dark:bg-sky-950/20 font-mono">
+              <div class="font-bold text-slate-800 dark:text-slate-200">${r.readings.bomba.new}</div>
+              <div class="text-[11px] font-bold text-sky-700 dark:text-sky-400">+${u.bomba}</div>
             </td>
-            <td class="p-2.5 text-right bg-amber-50/40 font-mono">
-              <div class="font-bold text-slate-800">${r.readings.besar_ks.new}</div>
-              <div class="text-[11px] font-bold text-amber-700">+${u.besar_ks}</div>
+            <td class="p-2.5 text-right bg-amber-50/40 dark:bg-amber-950/20 font-mono">
+              <div class="font-bold text-slate-800 dark:text-slate-200">${r.readings.besar_ks.new}</div>
+              <div class="text-[11px] font-bold text-amber-700 dark:text-amber-400">+${u.besar_ks}</div>
             </td>
-            <td class="p-2.5 text-right bg-amber-50/20 font-mono">
-              <div class="font-bold text-slate-800">${r.readings.kecil_ks.new}</div>
-              <div class="text-[11px] font-bold text-amber-700">+${u.kecil_ks}</div>
+            <td class="p-2.5 text-right bg-amber-50/20 dark:bg-amber-950/10 font-mono">
+              <div class="font-bold text-slate-800 dark:text-slate-200">${r.readings.kecil_ks.new}</div>
+              <div class="text-[11px] font-bold text-amber-700 dark:text-amber-400">+${u.kecil_ks}</div>
             </td>
             <td class="p-2.5 text-right font-mono">
-              <div class="font-semibold text-slate-700">${r.readings.hostel.new}</div>
+              <div class="font-semibold text-slate-700 dark:text-slate-300">${r.readings.hostel.new}</div>
               <div class="text-[11px] text-slate-500">+${u.hostel}</div>
             </td>
             <td class="p-2.5 text-right font-mono">
-              <div class="font-semibold text-slate-700">${r.readings.rumah_burung.new}</div>
+              <div class="font-semibold text-slate-700 dark:text-slate-300">${r.readings.rumah_burung.new}</div>
               <div class="text-[11px] text-slate-500">+${u.rumah_burung}</div>
             </td>
-            <td class="p-2.5 text-right bg-emerald-50/60 font-mono font-extrabold text-emerald-700">
+            <td class="p-2.5 text-right bg-emerald-50/60 dark:bg-emerald-950/25 font-mono font-extrabold text-emerald-700 dark:text-emerald-400">
               +${u.sck_bersih}
             </td>
             <td class="p-2.5 text-center">
-              <span class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full ${photoCount > 0 ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-100 text-slate-400'}">
+              <span class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full ${photoCount > 0 ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-800 dark:text-indigo-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}">
                 ${photoCount}/5
               </span>
             </td>
             <td class="p-2.5 text-center whitespace-nowrap">
-              <button onclick="editRecord('${r.date}')" class="text-xs font-bold text-sck-primary hover:underline mr-2">Sunting</button>
-              <button onclick="deleteRecord('${r.date}')" class="text-xs font-semibold text-rose-600 hover:underline">Padam</button>
+              <button onclick="editRecord('${r.date}')" class="text-xs font-bold text-sck-primary dark:text-sky-400 hover:underline mr-2">Sunting</button>
+              <button onclick="promptDeleteRecord('${r.date}')" class="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline">Padam</button>
             </td>
           </tr>
         `;
@@ -1325,20 +1736,39 @@
       handleRecordDateChange();
     }
 
-    async function deleteRecord(isoDate) {
+    function promptDeleteRecord(isoDate) {
+      pendingDeleteDate = isoDate;
+      document.getElementById('delete-confirm-text').textContent = `Adakah anda pasti ingin memadam rekod bacaan pada ${formatDateMY(isoDate)} (${getDayNameMY(isoDate)})?`;
+      document.getElementById('delete-confirm-modal').classList.remove('hidden');
+      document.getElementById('btn-confirm-delete').onclick = () => executeDeleteRecord(isoDate);
+    }
+
+    function closeDeleteModal() {
+      pendingDeleteDate = null;
+      document.getElementById('delete-confirm-modal').classList.add('hidden');
+    }
+
+    async function executeDeleteRecord(isoDate) {
+      closeDeleteModal();
+      records = records.filter(r => r.date !== isoDate);
+      saveLocalRecordsCache();
+      refreshAllViews();
+
       try {
         setCloudStatus('syncing', '↻ Memadam...');
-        await deleteDoc(doc(db, RECORDS_COLLECTION, isoDate));
-        setCloudStatus('online', '● Cloud Aktif');
-        showToast(`Rekod ${formatDateMY(isoDate)} telah dipadam dari Cloud.`, 'info');
+        const colRef = getActiveCollectionRef();
+        await deleteDoc(doc(colRef, isoDate));
+        setCloudStatus('online', currentUser ? '● Cloud Google Aktif' : '● Cloud Aktif');
+        showToast(`Rekod ${formatDateMY(isoDate)} telah dipadam.`, 'info');
       } catch (err) {
-        console.error(err);
-        showToast('Gagal memadam rekod.', 'error');
+        console.warn('Dipadam secara tempatan:', err);
+        setCloudStatus('guest', '○ Simpanan Lokal');
+        showToast(`Rekod ${formatDateMY(isoDate)} telah dipadam dari simpanan lokal.`, 'info');
       }
     }
 
     // -----------------------------------------------------------------------
-    // 9. TAB 3: PENJANAAN 2 LAPORAN SAIZ A4
+    // 11. TAB 3: PENJANAAN 2 LAPORAN SAIZ A4 (LANDSCAPE & PORTRAIT)
     // -----------------------------------------------------------------------
     function renderA4Reports() {
       const [yearStr, monthStr] = selectedMonthKey.split('-');
@@ -1384,7 +1814,7 @@
           const u = computeRecordUsage(rec);
           const rb = rec.readings;
           rowsHTML += `
-            <tr class="${rowBg} font-medium">
+            <tr class="${rowBg} font-medium text-slate-900">
               <td class="font-bold whitespace-nowrap">${formatDateMY(iso)}</td>
               <td class="text-left pl-1.5 font-semibold">${NAMA_HARI_MS[dow]}${rec.isMonthly ? ' ★' : ''}</td>
               <td>${rb.bomba.old}</td>
@@ -1431,7 +1861,7 @@
               <p class="text-[10px] text-slate-600">Lokasi: Jalan Kampung Bukit Palas, 26080 Kuantan, Pahang Darul Makmur</p>
             </div>
           </div>
-          <table class="text-[9px] border border-slate-700 border-collapse">
+          <table class="text-[9px] border border-slate-700 border-collapse text-slate-900">
             <tr>
               <td class="border border-slate-700 px-2 py-0.5 font-bold bg-slate-100">BULAN</td>
               <td class="border border-slate-700 px-2 py-0.5 font-extrabold text-sck-primary">${monthName}</td>
@@ -1471,7 +1901,7 @@
           </thead>
           <tbody>
             ${rowsHTML}
-            <tr class="bg-slate-200 font-extrabold text-[9.5px]">
+            <tr class="bg-slate-200 font-extrabold text-[9.5px] text-slate-900">
               <td colspan="2" class="text-right pr-2">JUMLAH BULAN ${monthName} (m³)</td>
               <td colspan="2" class="bg-slate-100"></td>
               <td class="bg-sky-200 text-sky-950">${sumBomba.toLocaleString()}</td>
@@ -1547,7 +1977,7 @@
                       </div>`
                   }
                 </div>
-                <div class="grid grid-cols-3 text-center text-[9px] py-1.5 bg-white">
+                <div class="grid grid-cols-3 text-center text-[9px] py-1.5 bg-white text-slate-900">
                   <div class="border-r border-slate-200">
                     <span class="block text-[7.5px] text-slate-500">LAMA</span>
                     <strong class="font-mono">${item.old}</strong>
@@ -1573,7 +2003,7 @@
                   <h2 class="text-xs font-extrabold text-slate-900 mt-1">Tarikh Bacaan: ${formatDateMY(rec.date)} (${getDayNameMY(rec.date)})</h2>
                   ${rec.notes ? `<p class="text-[9px] text-slate-600">Catatan: ${rec.notes}</p>` : ''}
                 </div>
-                <div class="text-right text-[9.5px] bg-white border border-slate-300 rounded-lg px-3 py-1.5">
+                <div class="text-right text-[9.5px] bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-slate-900">
                   <div>Bomba SCK: <strong>${u.bomba} m³</strong></div>
                   <div>Kilang Sebelah: <strong class="text-amber-700">${u.kilang_sebelah} m³</strong></div>
                   <div class="border-t border-slate-200 mt-0.5 pt-0.5 text-emerald-800 font-extrabold">SCK Bersih: ${u.sck_bersih} m³</div>
@@ -1638,7 +2068,7 @@
     }
 
     // -----------------------------------------------------------------------
-    // 10. EKSPORT CSV & BACKUP / RESTORE JSON KE FIREBASE
+    // 12. EKSPORT CSV & BACKUP / RESTORE JSON
     // -----------------------------------------------------------------------
     function exportCSV() {
       const monthRecs = getMonthRecords(selectedMonthKey);
@@ -1706,14 +2136,23 @@
         try {
           const imported = JSON.parse(e.target.result);
           if (!Array.isArray(imported)) throw new Error('Format tidak sah');
-          setCloudStatus('syncing', '↻ Memulihkan...');
-          for (const item of imported) {
-            if (item.date) {
-              await setDoc(doc(db, RECORDS_COLLECTION, item.date), item);
+
+          records = imported.filter(item => item && item.date).sort((a, b) => a.date.localeCompare(b.date));
+          saveLocalRecordsCache();
+          refreshAllViews();
+
+          try {
+            setCloudStatus('syncing', '↻ Memulihkan...');
+            const colRef = getActiveCollectionRef();
+            for (const item of records) {
+              await setDoc(doc(colRef, item.date), item);
             }
+            setCloudStatus('online', currentUser ? '● Cloud Google Aktif' : '● Cloud Aktif');
+          } catch (cloudErr) {
+            setCloudStatus('guest', '○ Simpanan Lokal');
           }
-          setCloudStatus('online', '● Cloud Aktif');
-          showToast('Data backup berjaya dipulihkan ke Firebase Cloud!', 'success');
+
+          showToast('Data backup berjaya dipulihkan!', 'success');
         } catch (err) {
           showToast('Gagal memulihkan fail JSON. Pastikan format betul.', 'error');
         }
@@ -1722,7 +2161,7 @@
     }
 
     // -----------------------------------------------------------------------
-    // 11. MODAL & TOAST
+    // 13. MODAL & TOAST
     // -----------------------------------------------------------------------
     function openIphoneGuideModal() {
       document.getElementById('iphone-modal').classList.remove('hidden');
@@ -1738,7 +2177,7 @@
       const colors = {
         success: 'bg-emerald-600 text-white',
         error: 'bg-rose-600 text-white',
-        info: 'bg-slate-900 text-white'
+        info: 'bg-slate-900 dark:bg-slate-800 text-white border border-slate-700'
       };
       toast.className = `${colors[type] || colors.info} px-4 py-3 rounded-2xl shadow-lg text-xs sm:text-sm font-bold flex items-center justify-between gap-3 pointer-events-auto transition-all`;
       toast.innerHTML = `<span>${message}</span>`;
@@ -1746,11 +2185,18 @@
       setTimeout(() => {
         toast.style.opacity = '0';
         setTimeout(() => toast.remove(), 300);
-      }, 3200);
+      }, 3400);
     }
 
-    // Dedahkan fungsi ke global scope (window) untuk atribut onclick/onchange HTML
+    // Dedahkan fungsi ke global scope (window)
     Object.assign(window, {
+      openAuthModal,
+      closeAuthModal,
+      continueAsGuest,
+      loginWithGooglePopup,
+      logoutGoogleUser,
+      handleSyncScopeChange,
+      toggleDarkMode,
       handleMonthChange,
       openIphoneGuideModal,
       closeIphoneGuideModal,
@@ -1767,22 +2213,63 @@
       backupJSON,
       restoreJSON,
       editRecord,
-      deleteRecord,
+      promptDeleteRecord,
+      closeDeleteModal,
       printReports,
       renderA4Reports
     });
 
     // -----------------------------------------------------------------------
-    // 12. INISIALISASI APLIKASI
+    // 14. INISIALISASI APLIKASI & PENGAWASAN STATUS AUTH GOOGLE
     // -----------------------------------------------------------------------
     window.addEventListener('DOMContentLoaded', () => {
+      initTheme();
       generateAppleTouchIcon();
       renderMeterInputCards();
+
+      const modalSel = document.getElementById('sync-scope-select');
+      if (modalSel) modalSel.value = syncScope;
 
       const todayISO = getTodayISO();
       document.getElementById('record-date').value = todayISO;
 
-      initRealtimeFirestoreSync();
+      // Muatkan data segera supaya pratonton laman web sentiasa aktif
+      loadLocalRecordsFallback();
+
+      // Semak keputusan pengalihan (Redirect) jika pengguna dialihkan selepas popup disekat
+      getRedirectResult(auth)
+        .then((result) => {
+          if (result && result.user) {
+            currentUser = result.user;
+            isGuestOfflineMode = false;
+            sessionStorage.removeItem(GUEST_DISMISSED_KEY);
+            closeAuthModal();
+            showToast(`Selamat datang, ${currentUser.displayName || currentUser.email}!`, 'success');
+          }
+        })
+        .catch((err) => {
+          console.warn('Ralat Redirect Result:', err.code);
+        });
+
+      // Pantau status pengesahan Google Firebase Auth
+      onAuthStateChanged(auth, (user) => {
+        currentUser = user;
+        updateHeaderAuthUI();
+
+        if (user) {
+          isGuestOfflineMode = false;
+          closeAuthModal();
+          startFirestoreRealtimeSync();
+        } else {
+          // Jika pengguna belum log masuk, paparkan modal Google Login Popup
+          // kecuali mereka telah memilih Mod Tetamu dalam sesi ini
+          if (!sessionStorage.getItem(GUEST_DISMISSED_KEY)) {
+            openAuthModal();
+          } else {
+            setCloudStatus('guest', '○ Mod Tetamu (Lokal)');
+          }
+        }
+      });
     });
   </script>
 </body>
