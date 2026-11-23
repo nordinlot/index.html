@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>SCK WaterLog — Rekod Bacaan Meter Air</title>
+  <title>SCK WaterLog — Rekod Bacaan Meter Air (Cloud)</title>
 
   <!-- Konfigurasi iPhone Web App (Add to Home Screen) -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -49,7 +49,6 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    /* Gaya khusus untuk pratonton & cetakan saiz A4 */
     .a4-sheet {
       background: #ffffff;
       box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.12);
@@ -91,7 +90,6 @@
       font-weight: 700;
     }
 
-    /* Kawalan Cetak A4 Tepat (Safari iPhone, Chrome, Edge) */
     @media print {
       @page {
         size: A4;
@@ -134,7 +132,6 @@
         display: none !important;
       }
 
-      /* Pastikan warna latar jadual dicetak */
       * {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
@@ -145,12 +142,11 @@
 <body class="min-h-screen flex flex-col">
 
   <!-- ===================================================================== -->
-  <!-- HEADER APLIKASI & NOTIFIKASI PINTAR (DISOROK SEMASA CETAK)            -->
+  <!-- HEADER APLIKASI & STATUS CLOUD FIREBASE                               -->
   <!-- ===================================================================== -->
   <header class="no-print bg-gradient-to-r from-sck-dark via-sck-primary to-sck-accent text-white shadow-lg sticky top-0 z-30">
     <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
       <div class="flex items-center gap-3">
-        <!-- Logo SVG Kustom SCK WaterLog -->
         <div class="w-11 h-11 rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 flex items-center justify-center shadow-inner shrink-0">
           <svg class="w-7 h-7" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M32 7C32 7 50 26.5 50 40.5C50 50.4411 41.9411 58.5 32 58.5C22.0589 58.5 14 50.4411 14 40.5C14 26.5 32 7 32 7Z" fill="url(#dropGrad)" />
@@ -166,9 +162,12 @@
           </svg>
         </div>
         <div>
-          <div class="flex items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2">
             <h1 class="text-lg sm:text-xl font-extrabold tracking-tight leading-none">SCK WaterLog</h1>
             <span class="text-[10px] font-bold uppercase tracking-wider bg-sky-400/25 border border-sky-200/30 px-2 py-0.5 rounded-full">Kuantan</span>
+            <span id="cloud-status-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400/25 text-amber-100 border border-amber-200/30">
+              Menyambung Cloud...
+            </span>
           </div>
           <p class="text-xs text-sky-100 mt-0.5">Rekod Bacaan Meter Air Mingguan & Awal Bulan</p>
         </div>
@@ -182,7 +181,6 @@
             <path d="M16 2v4M8 2v4M3 10h18" />
           </svg>
           <select id="month-selector" onchange="handleMonthChange(this.value)" class="bg-transparent text-white font-bold text-xs sm:text-sm focus:outline-none cursor-pointer">
-            <!-- Diisi secara dinamik -->
           </select>
         </div>
         <button onclick="openIphoneGuideModal()" title="Pasang di iPhone" class="p-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 transition" aria-label="Panduan iPhone">
@@ -222,11 +220,10 @@
   </header>
 
   <!-- ===================================================================== -->
-  <!-- WIDGET PERINGATAN PINTAR ISNIN & AWAL BULAN (1HB / 2HB HARI BEKERJA)  -->
+  <!-- WIDGET PERINGATAN PINTAR ISNIN & AWAL BULAN                           -->
   <!-- ===================================================================== -->
   <section class="no-print max-w-6xl w-full mx-auto px-4 pt-4">
     <div id="smart-reminder-card" class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-3.5 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
-      <!-- Kandungan dijana oleh JS mengikut kalendar semasa -->
     </div>
   </section>
 
@@ -235,16 +232,13 @@
   <!-- ===================================================================== -->
   <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-4">
 
-    <!-- ------------------------------------------------------------------- -->
-    <!-- TAB 1: INPUT BACAAN & LAMPIRAN GAMBAR TIMEMARK                      -->
-    <!-- ------------------------------------------------------------------- -->
+    <!-- TAB 1: INPUT BACAAN & LAMPIRAN GAMBAR TIMEMARK -->
     <div id="view-input" class="space-y-4">
-      <!-- Kad Tetapan Tarikh & Jenis Laporan (2 Report dalam 1 Masa) -->
       <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
           <div>
             <h2 class="text-base sm:text-lg font-extrabold text-slate-800">Borang Bacaan & Bukti Gambar Meter</h2>
-            <p class="text-xs text-slate-500 mt-0.5">Isi bacaan baru & lampirkan gambar Timemark. Bacaan lama diambil automatik dari rekod terdahulu.</p>
+            <p class="text-xs text-slate-500 mt-0.5">Isi bacaan baru & lampirkan gambar Timemark. Data disegerakkan secara automatik ke Firebase Cloud.</p>
           </div>
           <div class="flex items-center gap-2">
             <button type="button" onclick="setQuickToday()" class="text-xs font-bold px-3 py-2 rounded-xl bg-sky-50 text-sck-primary border border-sky-200 hover:bg-sky-100 transition">
@@ -257,14 +251,12 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-12 gap-4 pt-4">
-          <!-- Pilih Tarikh -->
           <div class="md:col-span-4">
             <label for="record-date" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Tarikh Rekod</label>
             <input type="date" id="record-date" onchange="handleRecordDateChange()" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-sck-accent focus:border-sck-accent outline-none" />
             <p id="record-day-label" class="text-xs font-semibold text-sck-accent mt-1.5"></p>
           </div>
 
-          <!-- Pilih Jenis Rekod (Boleh tanda kedua-duanya serentak!) -->
           <div class="md:col-span-8">
             <span class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Kategori Laporan (Boleh tanda 2 serentak)</span>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -290,15 +282,14 @@
 
       <!-- Kad Input 5 Meter Utama -->
       <div id="meters-input-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <!-- Dijana oleh JS untuk 5 meter -->
       </div>
 
-      <!-- Kad Rumusan Langsung (Live Preview Kiraan Kilang Sebelah & SCK) -->
+      <!-- Kad Rumusan Langsung -->
       <div class="bg-gradient-to-br from-slate-900 to-sck-dark text-white rounded-2xl p-4 sm:p-5 shadow-md">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
           <div>
             <span class="text-[11px] font-bold uppercase tracking-wider text-sky-300">Rumusan Automatik Rekod Ini</span>
-            <h3 class="text-base font-bold">Pengiraan Penggunaan Air ($m^3$)</h3>
+            <h3 class="text-base font-bold">Pengiraan Penggunaan Air (m³)</h3>
           </div>
           <span class="text-xs text-sky-200 bg-white/10 px-3 py-1 rounded-full self-start">Formula Excel SCK: Bomba - Kilang Sebelah</span>
         </div>
@@ -324,10 +315,10 @@
         <div class="mt-4 pt-4 border-t border-white/15 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
           <input type="text" id="record-notes" placeholder="Catatan tambahan (pilihan, cth: Bacaan Isnin & Awal Bulan diambil jam 2:35 PM)" class="flex-1 bg-white/10 border border-white/20 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-sky-200/70 focus:outline-none focus:ring-2 focus:ring-sky-400" />
           <div class="flex items-center gap-2">
-            <button type="button" onclick="saveReadingRecord(false)" class="flex-1 sm:flex-none bg-sky-500 hover:bg-sky-400 text-white font-bold text-sm px-5 py-3 rounded-xl shadow transition">
+            <button type="button" id="btn-save-only" onclick="saveReadingRecord(false)" class="flex-1 sm:flex-none bg-sky-500 hover:bg-sky-400 text-white font-bold text-sm px-5 py-3 rounded-xl shadow transition">
               Simpan Rekod
             </button>
-            <button type="button" onclick="saveReadingRecord(true)" class="flex-1 sm:flex-none bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-sm px-5 py-3 rounded-xl shadow transition flex items-center justify-center gap-1.5">
+            <button type="button" id="btn-save-export" onclick="saveReadingRecord(true)" class="flex-1 sm:flex-none bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-sm px-5 py-3 rounded-xl shadow transition flex items-center justify-center gap-1.5">
               <span>Simpan & Jana A4</span>
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                 <path d="M5 12h14M13 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" />
@@ -338,16 +329,11 @@
       </div>
     </div>
 
-    <!-- ------------------------------------------------------------------- -->
-    <!-- TAB 2: JADUAL BULANAN & RINGKASAN ANALISIS                          -->
-    <!-- ------------------------------------------------------------------- -->
+    <!-- TAB 2: JADUAL BULANAN & RINGKASAN ANALISIS -->
     <div id="view-table" class="hidden space-y-4">
-      <!-- Kad Ringkasan Bulanan -->
       <div id="monthly-summary-cards" class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <!-- Dijana oleh JS -->
       </div>
 
-      <!-- Bar Kawalan Jadual & Backup -->
       <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div>
@@ -368,7 +354,6 @@
           </div>
         </div>
 
-        <!-- Jadual Responsif -->
         <div class="overflow-x-auto rounded-xl border border-slate-200">
           <table class="w-full text-xs text-left border-collapse">
             <thead>
@@ -386,18 +371,14 @@
               </tr>
             </thead>
             <tbody id="monthly-records-tbody" class="divide-y divide-slate-100">
-              <!-- Dijana oleh JS -->
             </tbody>
           </table>
         </div>
       </div>
     </div>
 
-    <!-- ------------------------------------------------------------------- -->
-    <!-- TAB 3: EKSPORT & CETAK LAPORAN SAIZ A4 (2 LAPORAN SERENTAK)           -->
-    <!-- ------------------------------------------------------------------- -->
+    <!-- TAB 3: EKSPORT & CETAK LAPORAN SAIZ A4 (2 LAPORAN SERENTAK) -->
     <div id="view-export" class="hidden space-y-4">
-      <!-- Panel Kawalan Cetakan A4 -->
       <div class="no-print bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
@@ -423,7 +404,6 @@
           </div>
         </div>
 
-        <!-- Penapis Tarikh untuk Laporan Bergambar -->
         <div class="mt-4 pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div class="flex items-center gap-2">
             <label for="photo-report-filter" class="text-xs font-bold text-slate-600">Paparan Laporan 2 (Bukti Gambar):</label>
@@ -441,23 +421,14 @@
 
       <!-- PENTAS PRATONTON & CETAKAN A4 -->
       <div id="print-stage" class="overflow-x-auto pb-8">
-        <!-- LAPORAN 1: BORANG JADUAL REKOD AIR BULANAN SCK (A4) -->
-        <div id="a4-report-1" class="a4-sheet a4-landscape page-break-after">
-          <!-- Dijana oleh JS -->
-        </div>
-
-        <!-- LAPORAN 2: LAPORAN BERGAMBAR TIMEMARK & RUMUSAN ISNIN / AWAL BULAN (A4) -->
-        <div id="a4-report-2" class="a4-sheet a4-portrait">
-          <!-- Dijana oleh JS -->
-        </div>
+        <div id="a4-report-1" class="a4-sheet a4-landscape page-break-after"></div>
+        <div id="a4-report-2" class="a4-sheet a4-portrait"></div>
       </div>
     </div>
 
   </main>
 
-  <!-- ===================================================================== -->
-  <!-- MODAL PANDUAN ADD TO HOME SCREEN IPHONE (WEB APP LOGO)               -->
-  <!-- ===================================================================== -->
+  <!-- MODAL PANDUAN ADD TO HOME SCREEN IPHONE -->
   <div id="iphone-modal" class="no-print hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
       <div class="flex items-center justify-between mb-4">
@@ -494,17 +465,52 @@
     </div>
   </div>
 
-  <!-- ===================================================================== -->
-  <!-- NOTIFIKASI TOAST DALAM APLIKASI (MENGGANTIKAN ALERT)                  -->
-  <!-- ===================================================================== -->
+  <!-- NOTIFIKASI TOAST -->
   <div id="toast-container" class="no-print fixed bottom-5 right-5 left-5 sm:left-auto z-50 flex flex-col gap-2 pointer-events-none"></div>
 
   <!-- ===================================================================== -->
-  <!-- SKRIP LOGIK UTAMA APLIKASI                                            -->
+  <!-- SKRIP FIREBASE MODULAR SDK & LOGIK UTAMA APLIKASI                     -->
   <!-- ===================================================================== -->
-  <script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+    import {
+      getFirestore,
+      collection,
+      doc,
+      setDoc,
+      deleteDoc,
+      onSnapshot,
+      query,
+      orderBy
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import {
+      getStorage,
+      ref,
+      uploadString,
+      getDownloadURL
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+    // Konfigurasi Firebase SCK WaterLog (main-9c9bc)
+    const firebaseConfig = {
+      apiKey: "AIzaSyBJo4pVW_SlY5JK0iQLCeoCKI_nVjZLy3E",
+      authDomain: "main-9c9bc.firebaseapp.com",
+      projectId: "main-9c9bc",
+      storageBucket: "main-9c9bc.firebasestorage.app",
+      messagingSenderId: "893582780003",
+      appId: "1:893582780003:web:e647085e7105ab393afa56",
+      measurementId: "G-3HXRDS37CH"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+    const RECORDS_COLLECTION = "water_records";
+
     // -----------------------------------------------------------------------
-    // 1. KONFIGURASI 5 METER UTAMA & DATA PRA-ISI NOV 2026 (DARI EXCEL SCK)
+    // 1. KONFIGURASI 5 METER UTAMA & DATA AWAL NOV 2026
     // -----------------------------------------------------------------------
     const METERS = [
       {
@@ -513,8 +519,7 @@
         shortName: 'Bomba SCK',
         serial: 'PAIP1707F0040 (Elster DN80)',
         badgeColor: 'bg-sky-100 text-sky-800 border-sky-200',
-        accentBorder: 'border-sky-200',
-        padLength: 6
+        accentBorder: 'border-sky-200'
       },
       {
         id: 'besar_ks',
@@ -522,8 +527,7 @@
         shortName: 'Besar Kilang Sebelah',
         serial: 'Honeywell Helix H4000 DN100',
         badgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
-        accentBorder: 'border-amber-200',
-        padLength: 6
+        accentBorder: 'border-amber-200'
       },
       {
         id: 'kecil_ks',
@@ -531,8 +535,7 @@
         shortName: 'Kecil Kilang Sebelah',
         serial: 'GKM21E0198A',
         badgeColor: 'bg-orange-100 text-orange-800 border-orange-200',
-        accentBorder: 'border-orange-200',
-        padLength: 5
+        accentBorder: 'border-orange-200'
       },
       {
         id: 'hostel',
@@ -540,8 +543,7 @@
         shortName: 'Hostel SCK',
         serial: 'GKM26A025096A (WF)',
         badgeColor: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-        accentBorder: 'border-indigo-200',
-        padLength: 5
+        accentBorder: 'border-indigo-200'
       },
       {
         id: 'rumah_burung',
@@ -549,8 +551,7 @@
         shortName: 'Rumah Burung Tan Sri',
         serial: 'GKM24B00981A (SCK)',
         badgeColor: 'bg-teal-100 text-teal-800 border-teal-200',
-        accentBorder: 'border-teal-200',
-        padLength: 4
+        accentBorder: 'border-teal-200'
       }
     ];
 
@@ -561,12 +562,11 @@
 
     const NAMA_HARI_MS = ['Ahad', 'Isnin', 'Selasa', 'Rabu', 'Khamis', 'Jumaat', 'Sabtu'];
 
-    // Data awal sebenar daripada fail Excel 'REKOD AIR SCK.xlsx' (Sheet NOV 2026)
     const DEFAULT_RECORDS = [
       {
         date: '2026-11-02',
         isWeekly: true,
-        isMonthly: true, // 1 Nov 2026 ialah Ahad, maka 2 Nov 2026 (Isnin) ialah hari bekerja awal bulan
+        isMonthly: true,
         notes: 'Rekod Awal Bulan (2hb hari bekerja) & Mingguan Isnin',
         readings: {
           bomba: { old: 272611, new: 273488, photo: '' },
@@ -607,10 +607,11 @@
     const STORAGE_KEY = 'sck_waterlog_records_v1';
     let records = [];
     let selectedMonthKey = '2026-11';
-    let currentFormPhotos = {}; // Simpan sementara gambar base64 bagi borang aktif
+    let currentFormPhotos = {};
+    let isFirstLoad = true;
 
     // -----------------------------------------------------------------------
-    // 2. PENJANAAN IKON PNG DINAMIK UNTUK IPHONE (APPLE-TOUCH-ICON)
+    // 2. PENJANAAN IKON PNG DINAMIK UNTUK IPHONE
     // -----------------------------------------------------------------------
     function generateAppleTouchIcon() {
       try {
@@ -619,14 +620,12 @@
         canvas.height = 180;
         const ctx = canvas.getContext('2d');
 
-        // Latar belakang biru korporat bercerun
         const grad = ctx.createLinearGradient(0, 0, 180, 180);
         grad.addColorStop(0, '#0F4C81');
         grad.addColorStop(1, '#0284C7');
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, 180, 180);
 
-        // Titisan air putih
         ctx.beginPath();
         ctx.moveTo(90, 28);
         ctx.bezierCurveTo(90, 28, 136, 78, 136, 110);
@@ -636,13 +635,11 @@
         ctx.fillStyle = '#FFFFFF';
         ctx.fill();
 
-        // Dail meter di tengah titisan air
         ctx.beginPath();
         ctx.arc(90, 112, 23, 0, Math.PI * 2);
         ctx.fillStyle = '#0F4C81';
         ctx.fill();
 
-        // Jarum meter
         ctx.beginPath();
         ctx.moveTo(90, 112);
         ctx.lineTo(103, 99);
@@ -656,7 +653,6 @@
         ctx.fillStyle = '#FFFFFF';
         ctx.fill();
 
-        // Teks kecil SCK di bawah
         ctx.fillStyle = 'rgba(255,255,255,0.92)';
         ctx.font = 'bold 15px Inter, sans-serif';
         ctx.textAlign = 'center';
@@ -672,36 +668,76 @@
     }
 
     // -----------------------------------------------------------------------
-    // 3. PENGURUSAN STORAN DATA (LOCALSTORAGE)
+    // 3. SEGERAKKAN DATA REAL-TIME DARI FIREBASE FIRESTORE
     // -----------------------------------------------------------------------
-    function loadRecords() {
+    function setCloudStatus(status, text) {
+      const badge = document.getElementById('cloud-status-badge');
+      if (!badge) return;
+      if (status === 'online') {
+        badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-400/25 text-emerald-100 border border-emerald-200/30';
+        badge.textContent = text || '● Cloud Aktif';
+      } else if (status === 'syncing') {
+        badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-300/25 text-white border border-sky-200/30 animate-pulse';
+        badge.textContent = text || '↻ Menyimpan...';
+      } else {
+        badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-400/25 text-rose-100 border border-rose-200/30';
+        badge.textContent = text || '○ Mod Luar Talian';
+      }
+    }
+
+    function initRealtimeFirestoreSync() {
+      // Muatkan cache tempatan dahulu supaya paparan segera muncul
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            records = parsed;
-            return;
-          }
+        const cached = localStorage.getItem(STORAGE_KEY);
+        if (cached) {
+          records = JSON.parse(cached);
+        } else {
+          records = JSON.parse(JSON.stringify(DEFAULT_RECORDS));
         }
-      } catch (err) {
-        console.error('Ralat membaca localStorage:', err);
+      } catch (e) {
+        records = JSON.parse(JSON.stringify(DEFAULT_RECORDS));
       }
-      records = JSON.parse(JSON.stringify(DEFAULT_RECORDS));
-      saveRecordsToStorage();
-    }
 
-    function saveRecordsToStorage() {
-      try {
-        records.sort((a, b) => a.date.localeCompare(b.date));
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-      } catch (err) {
-        showToast('Amaran: Storan penuh. Cuba padam rekod lama atau kurangkan saiz gambar.', 'error');
-      }
+      const q = query(collection(db, RECORDS_COLLECTION), orderBy("date", "asc"));
+      onSnapshot(q, async (snapshot) => {
+        setCloudStatus('online', '● Cloud Aktif');
+
+        if (snapshot.empty && isFirstLoad) {
+          // Jika koleksi Firestore masih kosong kali pertama, muat naik rekod asas Nov 2026
+          isFirstLoad = false;
+          for (const item of DEFAULT_RECORDS) {
+            await setDoc(doc(db, RECORDS_COLLECTION, item.date), item);
+          }
+          return;
+        }
+
+        isFirstLoad = false;
+        const cloudList = [];
+        snapshot.forEach((docSnap) => {
+          cloudList.push(docSnap.data());
+        });
+
+        if (cloudList.length > 0) {
+          records = cloudList.sort((a, b) => a.date.localeCompare(b.date));
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+          } catch (err) {}
+        }
+
+        populateMonthSelector();
+        renderSmartReminder();
+        handleRecordDateChange();
+        renderMonthlyTable();
+        renderA4Reports();
+      }, (error) => {
+        console.error("Ralat sambungan Firestore:", error);
+        setCloudStatus('offline', '○ Mod Luar Talian');
+        showToast('Mod luar talian aktif. Pastikan Firestore diaktifkan dalam Firebase Console.', 'error');
+      });
     }
 
     // -----------------------------------------------------------------------
-    // 4. UTILITI TARIKH, HARI ISNIN & AWAL BULAN (1HB / 2HB HARI BEKERJA)
+    // 4. UTILITI TARIKH, HARI ISNIN & AWAL BULAN
     // -----------------------------------------------------------------------
     function getTodayISO() {
       const now = new Date();
@@ -723,34 +759,30 @@
       return NAMA_HARI_MS[dt.getDay()];
     }
 
-    // Semak jika tarikh adalah hari bekerja awal bulan (1hb jika Isnin-Sabtu, atau 2hb jika 1hb ialah Ahad)
     function isEarlyMonthWorkday(isoDate) {
       const [y, m, d] = isoDate.split('-').map(Number);
       const dt = new Date(y, m - 1, d);
-      const dow = dt.getDay(); // 0 = Ahad
+      const dow = dt.getDay();
       if (d === 1 && dow !== 0) return true;
       if (d === 2) {
         const firstDay = new Date(y, m - 1, 1).getDay();
-        if (firstDay === 0 || dow === 1) return true; // Jika 1hb Ahad atau 2hb Isnin
+        if (firstDay === 0 || dow === 1) return true;
       }
       return false;
     }
 
-    // Dapatkan tarikh Isnin semasa atau Isnin terdekat
     function getCurrentOrNextMonday(baseDate = new Date()) {
       const dt = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
       const dow = dt.getDay();
-      if (dow === 1) return dt; // Hari ini Isnin
+      if (dow === 1) return dt;
       const diff = dow === 0 ? 1 : (8 - dow);
       dt.setDate(dt.getDate() + diff);
       return dt;
     }
 
-    // Dapatkan tarikh hari bekerja awal bulan (1hb atau 2hb) bagi bulan diberi
     function getFirstWorkdayOfMonth(year, monthIndex) {
       const first = new Date(year, monthIndex, 1);
       if (first.getDay() === 0) {
-        // Jika 1hb jatuh hari Ahad, anjak ke 2hb (Isnin)
         return new Date(year, monthIndex, 2);
       }
       return first;
@@ -761,7 +793,7 @@
     }
 
     // -----------------------------------------------------------------------
-    // 5. WIDGET PERINGATAN PINTAR DI BAHAGIAN ATAS
+    // 5. WIDGET PERINGATAN PINTAR
     // -----------------------------------------------------------------------
     function renderSmartReminder() {
       const today = new Date();
@@ -773,7 +805,6 @@
       const mondayISO = dateToISO(mondayDate);
       const hasMondayRecord = records.some(r => r.date === mondayISO);
 
-      // Semak tarikh awal bulan (bulan semasa atau bulan depan jika sudah hujung bulan)
       let targetYear = today.getFullYear();
       let targetMonth = today.getMonth();
       if (today.getDate() > 25) {
@@ -878,7 +909,7 @@
     }
 
     // -----------------------------------------------------------------------
-    // 7. TAB 1: BORANG INPUT 5 METER & PEMAMPATAN GAMBAR IPHONE
+    // 7. TAB 1: BORANG INPUT 5 METER & MUAT NAIK GAMBAR KE FIREBASE STORAGE
     // -----------------------------------------------------------------------
     function renderMeterInputCards() {
       const container = document.getElementById('meters-input-container');
@@ -911,7 +942,6 @@
             </div>
           </div>
 
-          <!-- Bahagian Muat Naik / Ambil Gambar Timemark -->
           <div class="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
             <label class="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-sky-50 text-slate-700 hover:text-sck-primary border border-dashed border-slate-300 cursor-pointer transition text-xs font-bold">
               <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -955,7 +985,6 @@
       document.getElementById('tag-weekly').checked = isMon;
       document.getElementById('tag-monthly').checked = isEarly;
 
-      // Semak jika sudah ada rekod pada tarikh ini, atau ambil bacaan akhir sebelumnya
       const existing = records.find(r => r.date === isoDate);
       if (existing) {
         loadExistingDateToForm();
@@ -1024,7 +1053,7 @@
       });
 
       const bombaUsage = usages.bomba || 0;
-      const ksUsage = usages.besar_ks || 0; // Formula Excel SCK: =J13 (Meter Besar Kilang Sebelah)
+      const ksUsage = usages.besar_ks || 0;
       const ksSmallUsage = usages.kecil_ks || 0;
       const sckNetUsage = Math.max(0, bombaUsage - ksUsage);
 
@@ -1034,7 +1063,6 @@
       document.getElementById('live-sck-usage').innerHTML = `${sckNetUsage.toLocaleString()} <span class="text-xs font-normal text-emerald-200">m³</span>`;
     }
 
-    // Pemampatan Gambar Automatik menggunakan Canvas (Max 800px JPEG kualiti 0.72)
     function handlePhotoUpload(event, meterId) {
       const file = event.target.files[0];
       if (!file) return;
@@ -1043,7 +1071,7 @@
       reader.onload = function (e) {
         const img = new Image();
         img.onload = function () {
-          const maxDim = 800;
+          const maxDim = 900;
           let width = img.width;
           let height = img.height;
 
@@ -1063,10 +1091,10 @@
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
-          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.72);
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.78);
           currentFormPhotos[meterId] = compressedBase64;
           updatePhotoPreviewUI(meterId, compressedBase64);
-          showToast('Gambar meter berjaya dimampatkan & dilampirkan.', 'success');
+          showToast('Gambar sedia untuk dimuat naik ke Firebase Cloud.', 'success');
         };
         img.src = e.target.result;
       };
@@ -1078,12 +1106,12 @@
       updatePhotoPreviewUI(meterId, '');
     }
 
-    function updatePhotoPreviewUI(meterId, base64) {
+    function updatePhotoPreviewUI(meterId, urlOrBase64) {
       const wrap = document.getElementById(`photo-thumb-wrap-${meterId}`);
       const img = document.getElementById(`photo-thumb-${meterId}`);
       const label = document.getElementById(`photo-label-${meterId}`);
-      if (base64) {
-        img.src = base64;
+      if (urlOrBase64) {
+        img.src = urlOrBase64;
         wrap.classList.remove('hidden');
         label.textContent = 'Tukar Foto Meter';
       } else {
@@ -1093,51 +1121,72 @@
       }
     }
 
-    function saveReadingRecord(goToExport) {
+    async function saveReadingRecord(goToExport) {
       const isoDate = document.getElementById('record-date').value;
       if (!isoDate) {
         showToast('Sila pilih tarikh rekod terlebih dahulu.', 'error');
         return;
       }
 
-      const readingsObj = {};
-      METERS.forEach(m => {
-        const oldVal = parseFloat(document.getElementById(`old-${m.id}`).value) || 0;
-        const newRaw = document.getElementById(`new-${m.id}`).value;
-        const newVal = newRaw === '' ? oldVal : (parseFloat(newRaw) || 0);
-        readingsObj[m.id] = {
-          old: oldVal,
-          new: newVal,
-          photo: currentFormPhotos[m.id] || ''
+      const btnSave = document.getElementById('btn-save-only');
+      const btnExport = document.getElementById('btn-save-export');
+      btnSave.disabled = true;
+      btnExport.disabled = true;
+      setCloudStatus('syncing', '↻ Menyimpan ke Cloud...');
+
+      try {
+        const readingsObj = {};
+        for (const m of METERS) {
+          const oldVal = parseFloat(document.getElementById(`old-${m.id}`).value) || 0;
+          const newRaw = document.getElementById(`new-${m.id}`).value;
+          const newVal = newRaw === '' ? oldVal : (parseFloat(newRaw) || 0);
+          let photoFinalUrl = currentFormPhotos[m.id] || '';
+
+          // Jika gambar baru berformat Base64 (data:image/...), muat naik ke Firebase Storage
+          if (photoFinalUrl.startsWith('data:image')) {
+            try {
+              const storageRef = ref(storage, `meter_photos/${isoDate}/${m.id}_${Date.now()}.jpg`);
+              await uploadString(storageRef, photoFinalUrl, 'data_url');
+              photoFinalUrl = await getDownloadURL(storageRef);
+              currentFormPhotos[m.id] = photoFinalUrl;
+            } catch (storageErr) {
+              console.warn(`Muat naik Firebase Storage gagal untuk ${m.id}, menggunakan fallback base64:`, storageErr);
+            }
+          }
+
+          readingsObj[m.id] = {
+            old: oldVal,
+            new: newVal,
+            photo: photoFinalUrl
+          };
+        }
+
+        const newRecord = {
+          date: isoDate,
+          isWeekly: document.getElementById('tag-weekly').checked,
+          isMonthly: document.getElementById('tag-monthly').checked,
+          notes: document.getElementById('record-notes').value.trim(),
+          updatedAt: new Date().toISOString(),
+          readings: readingsObj
         };
-      });
 
-      const newRecord = {
-        date: isoDate,
-        isWeekly: document.getElementById('tag-weekly').checked,
-        isMonthly: document.getElementById('tag-monthly').checked,
-        notes: document.getElementById('record-notes').value.trim(),
-        readings: readingsObj
-      };
+        // Simpan dokumen dalam Cloud Firestore menggunakan tarikh (YYYY-MM-DD) sebagai ID
+        await setDoc(doc(db, RECORDS_COLLECTION, isoDate), newRecord);
 
-      const existingIndex = records.findIndex(r => r.date === isoDate);
-      if (existingIndex >= 0) {
-        records[existingIndex] = newRecord;
-      } else {
-        records.push(newRecord);
-      }
+        selectedMonthKey = isoDate.slice(0, 7);
+        setCloudStatus('online', '● Cloud Aktif');
+        showToast(`Rekod ${formatDateMY(isoDate)} berjaya disimpan ke Firebase Cloud!`, 'success');
 
-      saveRecordsToStorage();
-      selectedMonthKey = isoDate.slice(0, 7);
-      populateMonthSelector();
-      renderSmartReminder();
-      renderMonthlyTable();
-      renderA4Reports();
-
-      showToast(`Rekod tarikh ${formatDateMY(isoDate)} berjaya disimpan!`, 'success');
-
-      if (goToExport) {
-        switchTab('export');
+        if (goToExport) {
+          switchTab('export');
+        }
+      } catch (err) {
+        console.error('Ralat menyimpan ke Firebase:', err);
+        setCloudStatus('offline', '○ Ralat Simpan');
+        showToast('Gagal menyimpan ke Cloud. Sila semak sambungan internet atau peraturan Firestore.', 'error');
+      } finally {
+        btnSave.disabled = false;
+        btnExport.disabled = false;
       }
     }
 
@@ -1169,12 +1218,7 @@
       document.getElementById('table-month-title').textContent = `Jadual Rekod Bacaan Air — ${monthTitle}`;
 
       const monthRecs = getMonthRecords(selectedMonthKey);
-      let totalBomba = 0;
-      let totalBesarKS = 0;
-      let totalKecilKS = 0;
-      let totalHostel = 0;
-      let totalBurung = 0;
-      let totalSCK = 0;
+      let totalBomba = 0, totalBesarKS = 0, totalKecilKS = 0, totalHostel = 0, totalBurung = 0, totalSCK = 0;
 
       monthRecs.forEach(r => {
         const u = computeRecordUsage(r);
@@ -1186,7 +1230,6 @@
         totalSCK += u.sck_bersih;
       });
 
-      // Kad ringkasan di atas jadual
       document.getElementById('monthly-summary-cards').innerHTML = `
         <div class="bg-white rounded-2xl border border-slate-200 p-3.5 shadow-sm">
           <div class="text-[11px] font-bold text-slate-500 uppercase">Jumlah Meter Bomba</div>
@@ -1282,17 +1325,20 @@
       handleRecordDateChange();
     }
 
-    function deleteRecord(isoDate) {
-      records = records.filter(r => r.date !== isoDate);
-      saveRecordsToStorage();
-      renderSmartReminder();
-      renderMonthlyTable();
-      renderA4Reports();
-      showToast(`Rekod ${formatDateMY(isoDate)} telah dipadam.`, 'info');
+    async function deleteRecord(isoDate) {
+      try {
+        setCloudStatus('syncing', '↻ Memadam...');
+        await deleteDoc(doc(db, RECORDS_COLLECTION, isoDate));
+        setCloudStatus('online', '● Cloud Aktif');
+        showToast(`Rekod ${formatDateMY(isoDate)} telah dipadam dari Cloud.`, 'info');
+      } catch (err) {
+        console.error(err);
+        showToast('Gagal memadam rekod.', 'error');
+      }
     }
 
     // -----------------------------------------------------------------------
-    // 9. TAB 3: PENJANAAN 2 LAPORAN CANTIK SAIZ A4 (JADUAL + BERGAMBAR)
+    // 9. TAB 3: PENJANAAN 2 LAPORAN SAIZ A4
     // -----------------------------------------------------------------------
     function renderA4Reports() {
       const [yearStr, monthStr] = selectedMonthKey.split('-');
@@ -1303,14 +1349,12 @@
       const monthRecs = getMonthRecords(selectedMonthKey);
       const preparedBy = document.getElementById('prepared-by-input').value || 'Penyelia Fasiliti SCK';
 
-      // Map rekod ikut hari (1..31)
       const recByDay = {};
       monthRecs.forEach(r => {
         const dayNum = parseInt(r.date.split('-')[2], 10);
         recByDay[dayNum] = r;
       });
 
-      // Kira jumlah keseluruhan bulan
       let sumBomba = 0, sumBesarKS = 0, sumKecilKS = 0, sumHostel = 0, sumBurung = 0, sumSCK = 0;
       monthRecs.forEach(r => {
         const u = computeRecordUsage(r);
@@ -1322,7 +1366,6 @@
         sumSCK += u.sck_bersih;
       });
 
-      // Bina baris 1 hingga daysInMonth menyerupai struktur Excel 'REKOD AIR SCK.xlsx'
       let rowsHTML = '';
       for (let d = 1; d <= daysInMonth; d++) {
         const iso = `${yearStr}-${monthStr}-${String(d).padStart(2, '0')}`;
@@ -1379,7 +1422,6 @@
         }
       }
 
-      // LAPORAN 1: JADUAL RASMI BULANAN A4 LANDSCAPE
       document.getElementById('a4-report-1').innerHTML = `
         <div class="flex items-center justify-between border-b-2 border-slate-800 pb-2 mb-2">
           <div class="flex items-center gap-2.5">
@@ -1464,7 +1506,6 @@
         </div>
       `;
 
-      // LAPORAN 2: LAPORAN BERGAMBAR TIMEMARK & RINGKASAN BACAAN (A4 PORTRAIT)
       const filterMode = document.getElementById('photo-report-filter').value;
       const targetRecs = filterMode === 'latest'
         ? (monthRecs.length > 0 ? [monthRecs[monthRecs.length - 1]] : [])
@@ -1578,7 +1619,6 @@
       `;
     }
 
-    // Cetak / Simpan PDF (Kedua-dua laporan serentak atau salah satu)
     function printReports(mode) {
       const rep1 = document.getElementById('a4-report-1');
       const rep2 = document.getElementById('a4-report-2');
@@ -1598,7 +1638,7 @@
     }
 
     // -----------------------------------------------------------------------
-    // 10. EKSPORT CSV (EXCEL) & BACKUP / RESTORE JSON
+    // 10. EKSPORT CSV & BACKUP / RESTORE JSON KE FIREBASE
     // -----------------------------------------------------------------------
     function exportCSV() {
       const monthRecs = getMonthRecords(selectedMonthKey);
@@ -1662,17 +1702,18 @@
       const file = event.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = function (e) {
+      reader.onload = async function (e) {
         try {
           const imported = JSON.parse(e.target.result);
           if (!Array.isArray(imported)) throw new Error('Format tidak sah');
-          records = imported;
-          saveRecordsToStorage();
-          populateMonthSelector();
-          renderSmartReminder();
-          renderMonthlyTable();
-          renderA4Reports();
-          showToast('Data backup berjaya dipulihkan!', 'success');
+          setCloudStatus('syncing', '↻ Memulihkan...');
+          for (const item of imported) {
+            if (item.date) {
+              await setDoc(doc(db, RECORDS_COLLECTION, item.date), item);
+            }
+          }
+          setCloudStatus('online', '● Cloud Aktif');
+          showToast('Data backup berjaya dipulihkan ke Firebase Cloud!', 'success');
         } catch (err) {
           showToast('Gagal memulihkan fail JSON. Pastikan format betul.', 'error');
         }
@@ -1681,7 +1722,7 @@
     }
 
     // -----------------------------------------------------------------------
-    // 11. MODAL PANDUAN IPHONE & NOTIFIKASI TOAST
+    // 11. MODAL & TOAST
     // -----------------------------------------------------------------------
     function openIphoneGuideModal() {
       document.getElementById('iphone-modal').classList.remove('hidden');
@@ -1708,23 +1749,40 @@
       }, 3200);
     }
 
+    // Dedahkan fungsi ke global scope (window) untuk atribut onclick/onchange HTML
+    Object.assign(window, {
+      handleMonthChange,
+      openIphoneGuideModal,
+      closeIphoneGuideModal,
+      switchTab,
+      setQuickToday,
+      loadExistingDateToForm,
+      handleRecordDateChange,
+      recalculateLiveForm,
+      handlePhotoUpload,
+      removePhoto,
+      saveReadingRecord,
+      quickPrepareDate,
+      exportCSV,
+      backupJSON,
+      restoreJSON,
+      editRecord,
+      deleteRecord,
+      printReports,
+      renderA4Reports
+    });
+
     // -----------------------------------------------------------------------
-    // 12. INISIALISASI APLIKASI SEMASA HALAMAN DIBUKA
+    // 12. INISIALISASI APLIKASI
     // -----------------------------------------------------------------------
     window.addEventListener('DOMContentLoaded', () => {
       generateAppleTouchIcon();
-      loadRecords();
-      populateMonthSelector();
-      renderSmartReminder();
       renderMeterInputCards();
 
-      // Tetapkan tarikh hari ini (atau 2026-11-16 jika ada dalam rekod)
       const todayISO = getTodayISO();
       document.getElementById('record-date').value = todayISO;
-      handleRecordDateChange();
 
-      renderMonthlyTable();
-      renderA4Reports();
+      initRealtimeFirestoreSync();
     });
   </script>
 </body>
